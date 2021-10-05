@@ -3,6 +3,7 @@ import ot
 import numpy as np
 import scipy.io as sio
 import tensorflow as tf 
+import tensorflow_probability as tfp
 import matplotlib.pyplot as plt
 from tqdm import tqdm 
 from layers.sgcn import Sgc
