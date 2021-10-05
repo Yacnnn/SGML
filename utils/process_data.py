@@ -3,6 +3,7 @@ import sys
 import copy
 import re
 import numpy as np
+import igraph as ig
 import scipy.io as sio 
 import matplotlib.pyplot as plt
 
@@ -177,10 +178,10 @@ def load_alkane():
     return data
 
 def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
-    """"Load dataset_name from data folder
-        Any dataset from https://ls11-www.cs.tu-dortmund.de/staff/morris/graphkerneldatasets
-        can be used without code modification
-        edgels labels starting at value 10 instead of 0
+    """" Load dataset_name from data folder
+         Any dataset from https://ls11-www.cs.tu-dortmund.de/staff/morris/graphkerneldatasets
+         can be used without code modification
+         edgels labels starting at value 10 instead of 0
     """
     graph_indicator = []
     graph_size = []
@@ -311,7 +312,7 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
 # Implement features extraction of WWL papers 
 def create_labels_seq_cont(node_features, adj_mat, h):
 	'''
-	create label sequence for continuously attributed graphs 
+	    create label sequence for continuously attributed graphs 
 	'''
 	n_graphs = len(node_features)
 	labels_sequence = []
@@ -337,7 +338,7 @@ def create_labels_seq_cont(node_features, adj_mat, h):
 
 def create_adj_avg(adj_cur):
 	'''
-	create adjacency
+	    create adjacency
 	'''
 	deg = np.sum(adj_cur, axis = 1)
 	deg = np.asarray(deg).reshape(-1)
@@ -351,18 +352,14 @@ def create_adj_avg(adj_cur):
 	return adj_cur
 
 def compute_wl_embeddings_discrete(node_features, adj_mat, h):
-
     graphs = [ ig.Graph.Adjacency((adj > 0).tolist()) for adj in adj_mat ]
     for g, f in zip(graphs, node_features):
         for i in range(len(g.vs)):
             g.vs[i]["label"]  = str(f[i].argmax(0))
-
     # graph_filenames = retrieve_graph_filenames(data_directory)
     # graphs = [ig.read(filename) for filename in graph_filenames]
-
     wl = WeisfeilerLehman()
     label_dicts = wl.fit_transform(graphs, h)
-
     # Each entry in the list represents the label sequence of a single
     # graph. The label sequence contains the vertices in its rows, and
     # the individual iterations in its columns.
@@ -371,21 +368,17 @@ def compute_wl_embeddings_discrete(node_features, adj_mat, h):
     label_sequences = [
         np.full((len(graph.vs), h + 1), np.nan) for graph in graphs
     ]   
-
     for iteration in sorted(label_dicts.keys()):
         for graph_index, graph in enumerate(graphs):
             labels_raw, labels_compressed = label_dicts[iteration][graph_index]
-
             # Store label sequence of the current iteration, i.e. *all*
             # of the compressed labels.
             label_sequences[graph_index][:, iteration] = labels_compressed
-
     return label_sequences
 
 class WeisfeilerLehman(TransformerMixin):
-    """
-    Class that implements the Weisfeiler-Lehman transform
-    Credits: Christian Bock and Bastian Rieck
+    """ Class that implements the Weisfeiler-Lehman transform
+        Credits: Christian Bock and Bastian Rieck
     """
     def __init__(self):
         self._relabel_steps = defaultdict(dict)
