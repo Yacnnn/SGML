@@ -64,7 +64,7 @@ def save_distance(distance, parameters, title_extension = ""):
                     "distance" : distance, 
                     "parameters" : new_parameters })
 
-def compute_dataset_sdistance(parameters, data, model_name = "sw4d", partial_train = 0.9, addseed = 0):
+def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_train = 0.9, addseed = 0):
     """ Train the model given multiviews data and specified parameters and return it. """  
     cv = StratifiedKFold(n_splits = 10 , shuffle=True) 
     np.random.seed(42 + addseed)
@@ -228,10 +228,10 @@ if __name__ == '__main__':
                         parameter = process_data.update_path(parameter, args.dataset+"_"+args.task, NOW, parameter_id, run_id)
                         if args.task == "sw4d":
                             data = process_data.load_dataset(args.dataset, parameter["attributes"])
-                            distance = compute_dataset_sdistance(parameter, data, "sw4d", parameter["partial_train"], run_id)
+                            distance = compute_dataset_distance(parameter, data, "sw4d", parameter["partial_train"], run_id)
                         if args.task == "pw4d":
                             data = process_data.load_dataset(args.dataset, parameter["attributes"])
-                            distance = compute_dataset_sdistance(parameter, data, "pw4d", parameter["partial_train"], run_id)
+                            distance = compute_dataset_distance(parameter, data, "pw4d", parameter["partial_train"], run_id)
                         if args.task == "wwl":
                             data = process_data.load_dataset(args.dataset, parameter["attributes"], h = parameter["num_of_layer"])
                             isdiscrete = True if parameter["attributes"] == "node_labels" or parameter["attributes"] == "degree" else False
