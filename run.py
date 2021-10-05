@@ -134,7 +134,7 @@ def compute_dataset_sdistance(parameters, data, model_name = "sw4d", partial_tra
             # if 1 == 1 : 
             #     _ = model_xw4d(list(feat[0:2]),list(struct[0:2]),list(lab[0:2]),list(s[0:2]))
             #     # model_xw4d.quantitative_sampling_type_testv3(list(feat),list(struct),sampling_type)
-            #     model_xw4d.quantitative_sampling_type_testv2(list(feat),list(struct),"regular")
+            #     model_xw4d.quantitative_sampling_type_testv2(list(feat),list(struct),"uniform")
             #     model_xw4d.quantitative_sampling_type_testv2(list(feat),list(struct),"hamm")
             #     # model_xw4d.quantitative_sampling_type_testv2(list(feat),list(struct),"ortho")
             #     model_xw4d.quantitative_sampling_type_testv2(list(feat),list(struct),"orthov2")
@@ -188,7 +188,7 @@ if __name__ == '__main__':
     parser.add_argument('--partial_train', type = float, default = 0.9, help='Fraction of dataset to train on. [0 < float < 0.9]. If > 0.9 then = 0.9.')
     parser.add_argument('--num_of_run', type = int, default = 10, help='Number of run. [integer > 0]')
     ###
-    parser.add_argument('--sampling_type',type = str, default='orthov2', help='How to sample points for Monte-Carlo Estimation. For sw4d and pw4d. [regular, basis, orthov2, dppv2, hamm]')
+    parser.add_argument('--sampling_type',type = str, default='orthov2', help='How to sample points for Monte-Carlo Estimation. For sw4d and pw4d. [uniform, basis, orthov2, dppv2, hamm]')
     parser.add_argument('--sampling_nb', default = 50, help='Number of points to sample. [integer > 0]')
     ###
     parser.add_argument('--write_loss', type = str2bool, default = True, help='True or False. Decide whether or not to write loss training of model. [true, false]')

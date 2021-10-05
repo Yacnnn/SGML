@@ -1,28 +1,20 @@
 import os
 import ot
-import n_sphere
-import itertools
 import numpy as np
 import scipy.io as sio
 import tensorflow as tf 
 import matplotlib.pyplot as plt
-import tensorflow_probability as tfp
 from tqdm import tqdm 
-from layers.sgc import Sgc
+from layers.sgcn import Sgc
 from utils.process import uniform_transport_matrix
 from utils.process import hammersley_sphere_seq
 from utils.process import dpp_sphere_smpl
-from mpl_toolkits.mplot3d import Axes3D
-tfd = tfp.distributions
-tfpk = tfp.math.psd_kernels
-
-
 
 class Xw4d(tf.keras.Model):
     def __init__(self, 
                  gcn_type = "krylov-4",
                  l2reg = 0,
-                 loss_name = "regular",
+                 loss_name = "NCA",
                  num_of_layer = 3,
                  hidden_layer_dim = 32,
                  final_layer_dim = 32,
@@ -72,7 +64,7 @@ class Xw4d(tf.keras.Model):
             
     def update_theta(self, nb_theta = None):
         if self.sw_type == "mean":
-            if self.sample_type == "regular" :
+            if self.sample_type == "uniform" :
                 self.thetalist = tf.linalg.normalize( tf.random.normal([self.final_layer_dim,self.num_of_theta_sampled]) , ord='euclidean', axis=0)[0]
             elif self.sample_type == "basis" : 
                 self.thetalist = tf.eye(self.final_layer_dim) 
@@ -139,6 +131,22 @@ class Xw4d(tf.keras.Model):
             push += tf.reduce_sum(   tf.nn.relu(   (pull_distances[i:i+1,:] -  distances_sq[:,i:i+1]  + 1)*pull_mask[i,:k+1]*(1 - cross_labelsv2[:,i:i+1])    )     )
         return  (1-mu)*pull + mu*push
 
+    def build_transport_matrix(self, feat):
+        file_name = self.dataset + "_transport_matrix.mat"
+        if os.path.isfile('precomp/'+file_name):
+            self.transportmatrix = sio.loadmat('precomp/'+file_name)
+        else :
+            for i in tqdm(range(len(feat)), unit = 'trprtmtrx'):
+                for j in range(len(feat)):
+                    if i >= j :
+                        key = str(feat[i].shape[0]) + "-" + str(feat[j].shape[0])
+                        keyrev = str(feat[j].shape[0]) + "-" + str(feat[i].shape[0])
+                        if key not in self.transportmatrix.keys(): 
+                            self.transportmatrix[key] = uniform_transport_matrix(feat[i].shape[0],feat[j].shape[0])
+                            self.transportmatrix[keyrev] = np.transpose(self.transportmatrix[key])
+            sio.savemat('precomp/'+file_name, mdict=self.transportmatrix)
+            self.themax = max([len(f) for f in feat])
+                        
     def build_tm(self, feat, themax):
         tm = []
         for i in tqdm(range(len(feat)), unit = 'trprtmtrx', disable=True):
@@ -153,19 +161,19 @@ class Xw4d(tf.keras.Model):
         return tf.convert_to_tensor(tm)
 
     def build_tmv2(self, feat, feat2, themax):
-        tm = []
-        for i in tqdm(range(len(feat)), unit = 'trprtmtrx', disable=True):
-            for j in range(len(feat)):
-                # if i == j :
-                #    tm.append(  tf.zeros((themax,themax)) )
-                # if j >= i :
-                key = str(feat[i].shape[0]) + "-" + str(feat2[j].shape[0])
-                a = tf.concat( [self.transportmatrix[key], tf.zeros([themax-feat[i].shape[0],feat2[j].shape[0]])] , axis = 0) 
-                b = tf.concat( [a, tf.zeros([themax,themax-feat2[j].shape[0]])] , axis = 1) 
-                tm.append(  b )
-        return tf.convert_to_tensor(tm)
+            tm = []
+            for i in tqdm(range(len(feat)), unit = 'trprtmtrx', disable=True):
+                for j in range(len(feat)):
+                    # if i == j :
+                    #    tm.append(  tf.zeros((themax,themax)) )
+                    # if j >= i :
+                    key = str(feat[i].shape[0]) + "-" + str(feat2[j].shape[0])
+                    a = tf.concat( [self.transportmatrix[key], tf.zeros([themax-feat[i].shape[0],feat2[j].shape[0]])] , axis = 0) 
+                    b = tf.concat( [a, tf.zeros([themax,themax-feat2[j].shape[0]])] , axis = 1) 
+                    tm.append(  b )
+            return tf.convert_to_tensor(tm)
 
-        
+            
 
 
 
