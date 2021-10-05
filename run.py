@@ -13,6 +13,9 @@ from utils import process_data
 
 from sklearn.model_selection import ParameterGrid, StratifiedKFold
 
+from models.sw4d import Sw4d
+from models.pw4d import Pw4d
+
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 NOW = datetime.utcnow().strftime('%B_%d_%Y_%Hh%Mm%Ss')
 MAX_RESTART = 1
@@ -96,74 +99,46 @@ def compute_dataset_sdistance(parameters, data, model_name = "sw4d", partial_tra
     dataset = parameters["dataset"]
     batch_size = parameters["batch_size"]
     ###########
-    if model_name == "sw4d": 
-        sw_type = parameters["sw_type"]
-        model_xw4d = Sw4d( 
-                            sw_type = sw_type,
-                            sample_type = sampling_type, 
-                            num_of_theta_sampled = sampling_nb ,
-                            gcn_type = gcn,
-                            nonlinearity = nonlinearity,
-                            num_of_layer = num_of_layer,
-                            hidden_layer_dim = hidden_layer_dim,
-                            final_layer_dim = final_layer_dim,
-                            l2_reg = 0,
-                            loss_name = loss_name,
-                            dataset = dataset
-                        )
-    elif model_name == "pw4d": 
-        model_xw4d = Pw4d( 
-                            sample_type = sampling_type, 
-                            num_of_theta_sampled = sampling_nb ,
-                            gcn_type = gcn,
-                            nonlinearity = nonlinearity,
-                            num_of_layer = num_of_layer,
-                            hidden_layer_dim = hidden_layer_dim,
-                            final_layer_dim = final_layer_dim,
-                            l2_reg = 0,
-                            loss_name = loss_name,
-                            dataset = dataset )
+    Xw4d = Sw4d if model_name == "sw4d" else Pw4d if model_name == "pw4d" else None
+    model_xw4d = Xw4d( 
+                        gcn_type = gcn,
+                        l2_reg = 0,
+                        loss_name = loss_name,
+                        num_of_layer = num_of_layer,
+                        hidden_layer_dim = hidden_layer_dim,
+                        final_layer_dim = final_layer_dim,
+                        nonlinearity = nonlinearity,
+                        sample_type = sampling_type, 
+                        num_of_theta_sampled = sampling_nb,
+                        dataset = dataset
+                    )
     model_xw4d.build_transport_matrix(list(data["features"]))
-    old_loss_d = -1
+    # old_loss_d = -1
     for e in tqdm(range(num_of_iter), unit= "iter" ):
         # print( "epochs : " + str(e) + "/" + str(num_of_iter))
         batch_features, batch_structures, batch_labels, batch_s = create_batch(features, structures, labels, batch_size = batch_size, shuffle = True)
         optimizer = tf.keras.optimizers.Adam(lr = learning_rate)
         acc_loss_d = 0
         for feat, struct, lab, s in zip( tqdm( batch_features, unit = "batch", disable = True ), batch_structures, batch_labels, batch_s ):
-            # if 1 == 1 : 
-            #     _ = model_xw4d(list(feat[0:2]),list(struct[0:2]),list(lab[0:2]),list(s[0:2]))
-            #     # model_xw4d.quantitative_sampling_type_testv3(list(feat),list(struct),sampling_type)
-            #     model_xw4d.quantitative_sampling_type_testv2(list(feat),list(struct),"uniform")
-            #     model_xw4d.quantitative_sampling_type_testv2(list(feat),list(struct),"hamm")
-            #     # model_xw4d.quantitative_sampling_type_testv2(list(feat),list(struct),"ortho")
-            #     model_xw4d.quantitative_sampling_type_testv2(list(feat),list(struct),"orthov2")
-            #     # model_xw4d.quantitative_sampling_type_testv2(list(feat),list(struct),"dppv2")
-            #     abc = abcd
-            #     er = er
-            #     return 0
             with tf.GradientTape() as tape:
                 loss_d, loss_s =  model_xw4d(list(feat),list(struct),list(lab),list(s))
             gradients = tape.gradient(loss_d, model_xw4d.trainable_variables)
             gradient_variables = zip( gradients, model_xw4d.trainable_variables)
             optimizer.apply_gradients(gradient_variables)
+            acc_loss_d += loss_d
         # if tf.abs( (old_loss_d - loss_d ) / loss_d ) < 1e-6 :
         #     break
-        old_loss_d = loss_d
+        # old_loss_d = loss_d
         if decay_learning_rate :
             optimizer.learning_rate = learning_rate * np.math.pow(1.1, - 50.*(e / num_of_iter))
-        if e % 10  == 0 or 1 == 1:
-            print("epochs : " + str(e) + "/" + str(num_of_iter))
-            print("avg_loss_d : ", str(loss_d) )
-            # print( "avg_loss_s : " + str( loss_s.numpy() ) )
+        print("epochs : " + str(e) + "/" + str(num_of_iter))
+        print("avg_loss_d : ", str(acc_loss_d) )
         if e + 1  in save_iter  and e != num_of_iter - 1 :
-            D = model_xw4d.real_distancev2(list(data["features"]),list(data["structures"]))
-            parameters_bis = parameters.copy()
-            parameters_bis["num_of_iter"] = e + 1
-            save_distance(distance = D.numpy(), parameters = parameters , title_extension= "_iter"+str(e + 1))   
-    D = model_xw4d.real_distancev2(list(data["features"]),list(data["structures"]))
-    if parameters["sampling_type"] == "dpp" or parameters["sampling_type"] == "ortho":
-        parameters["sampling"] = model_xw4d.num_of_theta_sampled
+            D = model_xw4d.distance_fastv2(list(data["features"]),list(data["structures"]))
+            parameters_copy = parameters.copy()
+            parameters_copy["num_of_iter"] = e + 1
+            save_distance(distance = D.numpy(), parameters = parameters_copy , title_extension= "_iter"+str(e + 1))   
+    D = model_xw4d.distance_fastv2(list(data["features"]),list(data["structures"]))
     save_distance(distance = D.numpy(), parameters = parameters, title_extension= "_iter"+str(e + 1))
     return D
 

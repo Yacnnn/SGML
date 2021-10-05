@@ -172,8 +172,3 @@ class Xw4d(tf.keras.Model):
                     b = tf.concat( [a, tf.zeros([themax,themax-feat2[j].shape[0]])] , axis = 1) 
                     tm.append(  b )
             return tf.convert_to_tensor(tm)
-
-            
-
-
-
