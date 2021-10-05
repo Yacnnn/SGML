@@ -3,8 +3,6 @@ import sys
 import copy
 import re
 import numpy as np
-import pandas as pd
-import igraph as ig
 import scipy.io as sio 
 import matplotlib.pyplot as plt
 
@@ -16,7 +14,7 @@ from sklearn.base import TransformerMixin
 from collections import defaultdict
 
 ROOTDIR = ""
-#-------------------------- General --------------------------
+
 def available_tasks():
     """ Return list of available tasks. """
     return ["sw4d","pw4d","wwl","swwl"]
@@ -25,53 +23,53 @@ def available_datasets():
     """ Return list of available datasets. """
     return ["Alkane","ENZYMES","NCI109","PTC_FR","MUTAG","DD","PROTEINS_full"]
 
-def load_dataset(dataset_name, features = "attributes", h = 0):
-    """ Load datasets : - Alkane
-                        https://brunl01.users.greyc.fr/CHEMISTRY/
-                        - Dortmund datasets [ENZYMES,DD,MUTAG,PROYEINS_full,PTC_FR,NCI109]
-                        https://ls11-www.cs.tu-dortmund.de/staff/morris/graphkerneldatasets
+def available_features():
+    """ Return list of available datasets. """
+    return ["node_labels","attributes","degree","fuse"]
 
-        List of nodes features :   - node_labels [node labels for dortmund datasets]
-                                   - attributes [attributes for dortmund datasets, 
+def available_features_per_datasets(dataset):
+    """ Return list of available feature for a given dataset. """
+    if dataset in ["NCI109","PTC_FR","MUTAG","DD"]:
+        return ["node_labels", "degree"]
+    if dataset in ["ENZYMES","PROTEINS_full"]:
+        return ["attributes", "node_labels", "fuse", "degree"]
+    if dataset in ["Alkane"]:
+        return ["attributes", "degree"]
+       
+def load_dataset(dataset, feature = "attributes", h = 0):
+    """ Dataset : - Alkane
+                    https://brunl01.users.greyc.fr/CHEMISTRY/
+                  - ENZYMES,DD,MUTAG,PROYEINS_full,PTC_FR,NCI109
+                    https://ls11-www.cs.tu-dortmund.de/staff/morris/graphkerneldatasets
+
+        Feature :   - node_labels [node labels for dortmund datasets]
+                    - attributes [attributes for dortmund datasets, 
                                                  node positions for alkane]
-                                   - graph_fuse [concatenation of node_labels and features for dortmund datasets]
-                                   - degree [one hot encoding of degree]
-                                   
-        Available features :    - Alkane [attributes; degree]
-                                - NCI109 [node_labels; degree]
-                                - PTC_FR [node_labels; degree]
-                                - MUTAG [node_labels; degree]
-                                - DD [node_labels; degree]
-                                - ENZYMES [attributes; node_labels; fuse; degree]
-                                - PROTEINS_full [attributes; node_labels; fuse; degree]
+                    - graph_fuse [concatenation of node_labels and features for dortmund datasets]
+                    - degree [one hot encoding of degree]
 
-        if $h>0$ :  - If the features selectionned is continuous, GIN wth h layer is applied and returned as node features
+        if h > 0:  - If the features selectionned is continuous, GIN wth h layer is applied and returned as node features
                     - If the features selectionned is discrete, WL wth h layer is applied and returned as node features
                     (see WWL papers)
     """
-    datam = {}
-    if dataset_name in ["NCI109","PTC_FR","MUTAG","DD"]:
-        if features == "attributes" or features == "graph_fuse":
-            print("No attributes.")
-            sys.exit()
-        data = load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True) 
-        features_name = "node_labels"
-    elif dataset_name in ["ENZYMES","PROTEINS_full"]:
-        data = load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True) 
-        features_name = "node_labels" if features == "node_labels" else "graph_features" if features == "attributes" else "graph_fuse" if features == "fuse" else "degree"
-    elif dataset_name in ["Alkane"]:
+    if feature not in available_features_per_datasets(dataset):
+        print("No "+feature+" in "+dataset)
+        sys.exit()
+    if dataset in ["NCI109","PTC_FR","MUTAG","DD","ENZYMES","PROTEINS_full"]:
+        data = load_drtmnd_dataset(dataset, use_attributes_if_exist = True) 
+        feature_key = "node_labels" if feature == "node_labels" else "graph_features" if feature == "attributes" else "graph_fuse" if feature == "fuse" else "degree"
+    elif dataset in ["Alkane"]:
         data = load_alkane()
-        features_name =  "node_positions" if features == "attributes" else "degree"
-   
-    datam["features"] = datam[features_name]
+        feature_key =  "node_positions" if feature == "attributes" else "degree"
+    datam = {}
+    datam["features"] = datam[feature_key]
     datam["structures"] = np.array([d+0.0 for d in data["adjency_matrix"]]) 
     datam["labels"] = data["graph_labels"]
-
     if h > 0 :
-        if features == "features" or features == 'graph_fuse':  
+        if feature == "features" or feature == 'graph_fuse':  
             datam["features"] = create_labels_seq_cont(datam["features"], list(datam["structures"]), h)
-        if features == "node_labels" or features == "degree":
-            datam["features"] = create_labels_seq_cont(datam["features"], list(datam["structures"]), h)            
+        if feature == "node_labels" or feature == "degree":
+            datam["features"] = create_labels_seq_cont(datam["features"], list(datam["structures"]), h)     
     return datam
 
 def get_labels(dataset_name):
@@ -309,7 +307,6 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
     data["graph_degree"] = np.array([np.eye(int(max_degree))[np.sum(datam["structures"][i].astype(np.int32), axis = 0) - 1] for i in range(len(datam["structures"])) ])
         
     return data
-
 # Next function come from https://github.com/BorgwardtLab/WWL
 # Implement features extraction of WWL papers 
 def create_labels_seq_cont(node_features, adj_mat, h):
