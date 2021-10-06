@@ -20,7 +20,7 @@ class Xw4d(tf.keras.Model):
                  hidden_layer_dim = 32,
                  final_layer_dim = 32,
                  nonlinearity = "tanh",
-                 sample_type = "regular",
+                 sampling_type = "uniform",
                  num_of_theta_sampled = 1, 
                  dataset = ""
                 ):
@@ -33,7 +33,7 @@ class Xw4d(tf.keras.Model):
         self.hidden_layer_dim = hidden_layer_dim
         self.final_layer_dim = final_layer_dim
         self.nonlinearity = nonlinearity
-        self.sample_type = sample_type
+        self.sampling_type = sampling_type
         self.num_of_theta_sampled = num_of_theta_sampled
         self.dataset = dataset
         #
@@ -64,24 +64,22 @@ class Xw4d(tf.keras.Model):
                         l2reg = self.l2reg)
             
     def update_theta(self, nb_theta = None):
-        if self.sw_type == "mean":
-            if self.sample_type == "uniform" :
-                self.thetalist = tf.linalg.normalize( tf.random.normal([self.final_layer_dim,self.num_of_theta_sampled]) , ord='euclidean', axis=0)[0]
-            elif self.sample_type == "basis" : 
-                self.thetalist = tf.eye(self.final_layer_dim) 
-            elif self.sample_type == "orthov2" : 
-                q = self.num_of_theta_sampled // self.final_layer_dim
-                r = self.num_of_theta_sampled - q*self.final_layer_dim
-                tampon =  [ tfp.math.gram_schmidt( tf.linalg.normalize( tf.random.normal([self.final_layer_dim, self.final_layer_dim,]) , ord='euclidean', axis=0)[0] ) for k in range(q)]
-                if r > 0 :
-                    tampon.append(tfp.math.gram_schmidt( tf.linalg.normalize( tf.random.normal([self.final_layer_dim, self.final_layer_dim,]) , ord='euclidean', axis=0)[0] )[:,:r])
-                self.thetalist = tf.concat(tampon, axis = 1)
-            elif self.sample_type == "dpp" : 
-                self.thetalist = dpp_sphere_smpl( n = self.num_of_theta_sampled, p = self.final_layer_dim)
-            elif self.sample_type == "hamm" :
-                self.thetalist = hammersley_sphere_seq( n = self.num_of_theta_sampled, p = self.final_layer_dim)
-            self.num_of_theta_sampled = self.thetalist.shape[1]
-            
+        if self.sampling_type == "uniform" :
+            self.thetalist = tf.linalg.normalize( tf.random.normal([self.final_layer_dim,self.num_of_theta_sampled]) , ord='euclidean', axis=0)[0]
+        elif self.sampling_type == "basis" : 
+            self.thetalist = tf.eye(self.final_layer_dim) 
+        elif self.sampling_type == "ortho" : 
+            q = self.num_of_theta_sampled // self.final_layer_dim
+            r = self.num_of_theta_sampled - q*self.final_layer_dim
+            tampon =  [ tfp.math.gram_schmidt( tf.linalg.normalize( tf.random.normal([self.final_layer_dim, self.final_layer_dim,]) , ord='euclidean', axis=0)[0] ) for k in range(q)]
+            if r > 0 :
+                tampon.append(tfp.math.gram_schmidt( tf.linalg.normalize( tf.random.normal([self.final_layer_dim, self.final_layer_dim,]) , ord='euclidean', axis=0)[0] )[:,:r])
+            self.thetalist = tf.concat(tampon, axis = 1)
+        elif self.sampling_type == "dpp" : 
+            self.thetalist = dpp_sphere_smpl( n = self.num_of_theta_sampled, p = self.final_layer_dim)
+        elif self.sampling_type == "hamm" :
+            self.thetalist = hammersley_sphere_seq( n = self.num_of_theta_sampled, p = self.final_layer_dim)
+
     @tf.custom_gradient
     def grad_reverse(self,x):
         y = tf.identity(x)

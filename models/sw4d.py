@@ -17,15 +17,25 @@ class Sw4d(Xw4d):
                  hidden_layer_dim = 0,
                  final_layer_dim = 0,                
                  nonlinearity = "relu",
-                 sample_type = "regular",
+                 sampling_type = "regular",
                  num_of_theta_sampled = 1, 
                  dataset = ""                 
                 ):
-        super(Sw4d, self).__init__() 
+        super(Sw4d, self).__init__(
+                                   gcn_type = gcn_type,
+                                   l2reg = l2reg ,
+                                   loss_name = loss_name,
+                                   num_of_layer = num_of_layer,
+                                   hidden_layer_dim = hidden_layer_dim,
+                                   final_layer_dim = final_layer_dim,                
+                                   nonlinearity = nonlinearity,
+                                   sampling_type = sampling_type,
+                                   num_of_theta_sampled = num_of_theta_sampled , 
+                                   dataset = dataset  ) 
 
     def call(self, feat, adj, lab, s):
         lab = tf.convert_to_tensor(lab)[np.newaxis,:]
-        return self.loss( self.square_distance_fromtheta( feat, adj, self.theta ) , labels = lab ), 0
+        return self.loss( self.square_distance_fast( feat, adj, self.thetalist ) , labels = lab ), 0
     
     def square_distance_fromtheta(self, feat, adj, theta, display = False):
         output = self.gcn([feat,adj])
@@ -161,14 +171,14 @@ class Sw4d(Xw4d):
         for hd, hu in zip(limit_down, tqdm(limit_up)):
             for vd, vu in zip(limit_down,limit_up):
                 if hd == vd :
-                    d = tf.sqrt(self.square_distance_fromthetalistv2(output[hd:hu], [], self.thetalist, display = True))
+                    d = tf.sqrt(self.square_distance_fast(output[hd:hu], [], self.thetalist, display = True))
                     # d = tf.sqrt(self.square_distance_fromthetalistv2(feat[hd:hu], adj[hd:hu], self.thetalist, display = True))
                     # print(np.sum(d-d0))
                     D[hd:hu,vd:vu] = d/2
                     # d = tf.sqrt(self.square_distance_fromthetalistv3(feat[hd:hu], feat[vd:vu], adj[hd:hu], adj[vd:vu], self.thetalist, display = True))
                     # D[hd:hu,vd:vu] = d/2
                 if hd < vd :
-                    d = tf.sqrt(self.square_distance_fromthetalistv3(output[hd:hu], output[vd:vu], [], [], self.thetalist, display = True))
+                    d = tf.sqrt(self.square_distance_fastv2(output[hd:hu], output[vd:vu], [], [], self.thetalist, display = True))
                     # d = tf.sqrt(self.square_distance_fromthetalistv3(feat[hd:hu], feat[vd:vu], adj[hd:hu], adj[vd:vu], self.thetalist, display = True))
                     # print(np.sum(d-d0))
                     # d = tf.linalg.set_diag(d, tf.linalg.diag_part(d)/2) 

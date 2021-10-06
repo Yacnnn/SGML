@@ -58,12 +58,12 @@ def load_dataset(dataset, feature = "attributes", h = 0):
         sys.exit()
     if dataset in ["NCI109","PTC_FR","MUTAG","DD","ENZYMES","PROTEINS_full"]:
         data = load_drtmnd_dataset(dataset, use_attributes_if_exist = True) 
-        feature_key = "node_labels" if feature == "node_labels" else "graph_features" if feature == "attributes" else "graph_fuse" if feature == "fuse" else "degree"
+        feature_key = "node_labels" if feature == "node_labels" else "graph_features" if feature == "attributes" else "graph_fuse" if feature == "fuse" else "graph_degree"
     elif dataset in ["Alkane"]:
         data = load_alkane()
-        feature_key =  "node_positions" if feature == "attributes" else "degree"
+        feature_key =  "node_positions" if feature == "attributes" else "graph_degree"
     datam = {}
-    datam["features"] = datam[feature_key]
+    datam["features"] = data[feature_key]
     datam["structures"] = np.array([d+0.0 for d in data["adjency_matrix"]]) 
     datam["labels"] = data["graph_labels"]
     if h > 0 :
@@ -225,7 +225,7 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
             p = p + 1
 
     exist_node_labels = False
-    if  path.exists('data/'+dataset_name+'/'+dataset_name+'_node_labels.txt') :
+    if  os.path.exists('data/'+dataset_name+'/'+dataset_name+'_node_labels.txt') :
         exist_node_labels = True
         node_labels = [np.zeros((x,)) for x in graph_size];
         with open('data/'+dataset_name+'/'+dataset_name+'_node_labels.txt', 'r') as f:
@@ -305,7 +305,7 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
 
     max_degree = np.max([ np.max(np.sum(data["adjency_matrix"][i], axis = 0)) for i in range(len(data["adjency_matrix"])) ])
     # data["features"] = np.array(datam["features"])
-    data["graph_degree"] = np.array([np.eye(int(max_degree))[np.sum(datam["structures"][i].astype(np.int32), axis = 0) - 1] for i in range(len(datam["structures"])) ])
+    data["graph_degree"] = np.array([np.eye(int(max_degree))[np.sum(data["adjency_matrix"][i].astype(np.int32), axis = 0) - 1] for i in range(len(data["adjency_matrix"])) ])
         
     return data
 # Next function come from https://github.com/BorgwardtLab/WWL

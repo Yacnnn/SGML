@@ -17,15 +17,25 @@ class Pw4d(Xw4d):
                  hidden_layer_dim = 0,
                  final_layer_dim = 0,                
                  nonlinearity = "relu",
-                 sample_type = "regular",
+                 sampling_type = "regular",
                  num_of_theta_sampled = 1, 
                  dataset = ""    
                 ):
-        super(Pw4d, self).__init__() 
+        super(Pw4d, self).__init__(
+                                   gcn_type = gcn_type,
+                                   l2reg = l2reg ,
+                                   loss_name = loss_name,
+                                   num_of_layer = num_of_layer,
+                                   hidden_layer_dim = hidden_layer_dim,
+                                   final_layer_dim = final_layer_dim,                
+                                   nonlinearity = nonlinearity,
+                                   sampling_type = sampling_type,
+                                   num_of_theta_sampled = num_of_theta_sampled , 
+                                   dataset = dataset  ) 
 
     def call(self, feat, adj, lab, s):
         lab = tf.convert_to_tensor(lab)[np.newaxis,:]
-        return self.loss( self.square_distance_fromthetalistv2(feat, adj, self.thetalist) , labels = lab), 0
+        return self.loss( self.square_distance_fast(self.thetalist, adj, self.thetalist) , labels = lab), 0
     
     def square_distance_fromtheta(self, feat, adj, theta, display = False):
         output = self.gcn([feat,adj])
