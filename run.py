@@ -116,23 +116,23 @@ def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_trai
     # old_loss_d = -1
     for e in tqdm(range(num_of_iter), unit= "iter" ):
         # print( "epochs : " + str(e) + "/" + str(num_of_iter))
-        batch_features, batch_structures, batch_labels, batch_s = create_batch(features, structures, labels, batch_size = batch_size, shuffle = True)
+        batch_features, batch_structures, batch_labels, batch_indice = create_batch(features, structures, labels, batch_size = batch_size, shuffle = True)
         optimizer = tf.keras.optimizers.Adam(lr = learning_rate)
         acc_loss_d = 0
-        for feat, struct, lab, s in zip( tqdm( batch_features, unit = "batch", disable = True ), batch_structures, batch_labels, batch_s ):
+        for feat, struct, lab, s in zip( tqdm( batch_features, unit = "batch", disable = True ), batch_structures, batch_labels, batch_indice ):
             with tf.GradientTape() as tape:
                 loss_d, loss_s =  model_xw4d(list(feat),list(struct),list(lab),list(s))
             gradients = tape.gradient(loss_d, model_xw4d.trainable_variables)
             gradient_variables = zip( gradients, model_xw4d.trainable_variables)
             optimizer.apply_gradients(gradient_variables)
-            acc_loss_d += loss_d
+            acc_loss_d += loss_d/len(batch_indice)
         # if tf.abs( (old_loss_d - loss_d ) / loss_d ) < 1e-6 :
         #     break
         # old_loss_d = loss_d
         if decay_learning_rate :
             optimizer.learning_rate = learning_rate * np.math.pow(1.1, - 50.*(e / num_of_iter))
         print("epochs : " + str(e) + "/" + str(num_of_iter))
-        print("loss_d : ", str(loss_d) )
+        # print("loss_d : ", str(loss_d) )
         print("avg_loss_d : ", str(acc_loss_d) )
         if e + 1  in save_iter  and e != num_of_iter - 1 :
             D = model_xw4d.distance_fastv2(list(data["features"]),list(data["structures"]))
@@ -143,10 +143,51 @@ def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_trai
     save_distance(distance = D.numpy(), parameters = parameters, title_extension= "_iter"+str(e + 1))
     return D
 
+# from https://github.com/BorgwardtLab/WWL
+def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False, 
+                                    discrete=False, sinkhorn_lambda=1e-2):
+    '''
+    Generate the Wasserstein distance matrix for the graphs embedded 
+    in label_sequences
+    '''
+    # Get the iteration number from the embedding file
+    n = len(label_sequences)
+    emb_size = label_sequences[0].shape[1]
+    n_feat = int(emb_size/(h+1))
+    # Iterate over all possible h to generate the Wasserstein matrices
+    # hs = range(0, h + 1)
+    hs = range(h, h + 1)
+    wasserstein_distances = []
+    for h in hs:
+        M = np.zeros((n,n))
+        # Iterate over pairs of graphs
+        for graph_index_1, graph_1 in enumerate(label_sequences):
+            # Only keep the embeddings for the first h iterations
+            labels_1 = label_sequences[graph_index_1][:,:n_feat*(h+1)]
+            for graph_index_2, graph_2 in enumerate(label_sequences[graph_index_1:]):
+                labels_2 = label_sequences[graph_index_2 + graph_index_1][:,:n_feat*(h+1)]
+                # Get cost matrix
+                ground_distance = 'hamming' if discrete else 'euclidean'
+                costs = ot.dist(labels_1, labels_2, metric=ground_distance)
+
+                if sinkhorn:
+                    mat = ot.sinkhorn(np.ones(len(labels_1))/len(labels_1), 
+                                        np.ones(len(labels_2))/len(labels_2), costs, sinkhorn_lambda, 
+                                        numItermax=50)
+                    M[graph_index_1, graph_index_2 + graph_index_1] = np.sum(np.multiply(mat, costs))
+                else:
+                    M[graph_index_1, graph_index_2 + graph_index_1] = \
+                        ot.emd2([], [], costs) 
+        M = (M + M.T)
+        wasserstein_distances.append(M)
+        print(f'Iteration {h}: done.')
+    save_distance(wasserstein_distances[-1], parameters)
+    return wasserstein_distances
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--task', default='sw4d', help='Task to execute. Only %s are currently available.'%str(process_data.available_tasks()))
-    parser.add_argument('--dataset', default='MUTAG', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
+    parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(process_data.available_tasks()))
+    parser.add_argument('--dataset', default='NCI1', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
     parser.add_argument('--feature', default = 'degree', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
     parser.add_argument('--loss', default = "NCCML", help='Metric learning loss')
     ###    
@@ -158,8 +199,8 @@ if __name__ == '__main__':
     ###
     parser.add_argument('--learning_rate', type = float, default = 0.999e-2, help = 'Learning rate. [positive floats]' )
     parser.add_argument('--decay_learning_rate', type = str2bool, default = True, help='True or False. Apply or not a decay learning rate. [true, false]')
-    parser.add_argument('--num_of_iter', type = int, default = 100, help='Number of epochs. [integer > 0]')
-    parser.add_argument("--save_iter", nargs="+", default=[], help='List of epochs to save. [List of integer > 0]')
+    parser.add_argument('--num_of_iter', type = int, default = 10, help='Number of epochs. [integer > 0]')
+    parser.add_argument("--save_iter", nargs="+", default=[10], help='List of epochs to save. [List of integer > 0]')
     parser.add_argument('--batch_size', type = int, default = 8, help='Batch size. [integer > 0]')
     parser.add_argument('--partial_train', type = float, default = 0.9, help='Fraction of dataset to train on. [0 < float < 0.9]. If > 0.9 then = 0.9.')
     parser.add_argument('--num_of_run', type = int, default = 10, help='Number of run. [integer > 0]')
@@ -209,21 +250,24 @@ if __name__ == '__main__':
     parameters["write_weights"] =  [args.write_weights] 
     parameters["evaluation"] = [args.evaluation] 
     if args.grid_search :
-        parameters["num_of_layer"] = [0,1,2,3]
+        parameters["num_of_layer"] = [1,2,3,4]
         if args.task == "pw4d" or args.task == "sw4d":
-            parameters["feature"] = ["node_labels"] #["features","degree","node_labels","graph_fuse"]
+            parameters["feature"] = ["degree"] #["features","degree","node_labels","graph_fuse"]
             parameters["loss"] =  ["NCCML"] #"NCA", "LMNN-3", 
-            parameters["final_layer_dim"] = [0,-1]
-            parameters["decay_learning_rate"] = [True,False]
-            parameters["partial_train"] = [0.9]
-            parameters["sampling_type"] = ["ortho","basis","hamm","dpp"]
+            parameters["final_layer_dim"] = [0]
+            parameters["decay_learning_rate"] = [False]
+            parameters["partial_train"] = [0.9,0.2]
+            parameters["sampling_type"] = ["ortho",'basis']
             parameters["nonlinearity"] = ["relu"]
+            parameters["num_of_iter"] = [10]
+            parameters["sampling_nb"] = [50] 
+            parameters["batch_size"] = [8] 
     if args.task in process_data.available_tasks() and args.dataset in process_data.available_datasets():
         with tf.device(device):
             list_of_parameters = list(ParameterGrid(parameters))
             num_list_of_parameters = len(list_of_parameters)
             for parameter_id, parameters_ in tqdm(enumerate(list_of_parameters), unit= "param"):
-                if parameter_id in [k for k in range(num_list_of_parameters)]:
+                if parameter_id in [k for k in range(num_list_of_parameters)][6:8]:
                     first_run = True
                     for run_id in range(args.num_of_run):
                         parameters_ = process_data.update_path(parameters_, args.dataset+"_"+args.task, NOW, parameter_id, run_id)
@@ -236,7 +280,7 @@ if __name__ == '__main__':
                         if args.task == "wwl":
                             data = process_data.load_dataset(args.dataset, parameters_["features"], h = parameters_["num_of_layer"])
                             isdiscrete = True if parameters_["features"] == "node_labels" or parameters_["features"] == "degree" else False
-                            distance = compute_wasserstein_distance(data["features"],parameters_, h = 0, sinkhorn=False, discrete= isdiscrete, sinkhorn_lambda=1e-2)[-1]
+                            distance = compute_wasserstein_distance(data["features"],parameters_, h = parameters_["num_of_layer"], sinkhorn=False, discrete= isdiscrete, sinkhorn_lambda=1e-2)[-1]
                         #------------------
                         if first_run :
                             first_run = False

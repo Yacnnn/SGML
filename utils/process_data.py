@@ -22,7 +22,7 @@ def available_tasks():
 
 def available_datasets():
     """ Return list of available datasets. """
-    return ["Alkane","ENZYMES","NCI109","PTC_FR","MUTAG","DD","PROTEINS_full"]
+    return ["Alkane","ENZYMES","NCI109","NCI1","PTC_MR","MUTAG","DD","PROTEINS_full"]
 
 def available_features():
     """ Return list of available datasets. """
@@ -30,7 +30,7 @@ def available_features():
 
 def available_features_per_datasets(dataset):
     """ Return list of available feature for a given dataset. """
-    if dataset in ["NCI109","PTC_FR","MUTAG","DD"]:
+    if dataset in ["NCI109","NCI1","PTC_MR","MUTAG","DD"]:
         return ["node_labels", "degree"]
     if dataset in ["ENZYMES","PROTEINS_full"]:
         return ["attributes", "node_labels", "fuse", "degree"]
@@ -40,7 +40,7 @@ def available_features_per_datasets(dataset):
 def load_dataset(dataset, feature = "attributes", h = 0):
     """ Dataset : - Alkane
                     https://brunl01.users.greyc.fr/CHEMISTRY/
-                  - ENZYMES,DD,MUTAG,PROYEINS_full,PTC_FR,NCI109
+                  - ENZYMES,DD,MUTAG,PROYEINS_full,PTC_MR,NCI109,NCI1
                     https://ls11-www.cs.tu-dortmund.de/staff/morris/graphkerneldatasets
 
         Feature :   - node_labels [node labels for dortmund datasets]
@@ -56,7 +56,7 @@ def load_dataset(dataset, feature = "attributes", h = 0):
     if feature not in available_features_per_datasets(dataset):
         print("No "+feature+" in "+dataset)
         sys.exit()
-    if dataset in ["NCI109","PTC_FR","MUTAG","DD","ENZYMES","PROTEINS_full"]:
+    if dataset in ["NCI109","NCI1","PTC_MR","MUTAG","DD","ENZYMES","PROTEINS_full"]:
         data = load_drtmnd_dataset(dataset, use_attributes_if_exist = True) 
         feature_key = "node_labels" if feature == "node_labels" else "graph_features" if feature == "attributes" else "graph_fuse" if feature == "fuse" else "graph_degree"
     elif dataset in ["Alkane"]:
@@ -75,7 +75,7 @@ def load_dataset(dataset, feature = "attributes", h = 0):
 
 def get_labels(dataset_name):
     """ Return the label of specified dataset (When possible). """
-    if dataset_name in ["NCI109","PTC_FR","MUTAG","DD"]:
+    if dataset_name in ["NCI109","NCI1","PTC_MR","MUTAG","DD"]:
         data = load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True) 
     elif dataset_name in ["PROTEINS_full","ENZYMES"]:
         data = load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True) 
@@ -306,7 +306,9 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
     max_degree = np.max([ np.max(np.sum(data["adjency_matrix"][i], axis = 0)) for i in range(len(data["adjency_matrix"])) ])
     # data["features"] = np.array(datam["features"])
     data["graph_degree"] = np.array([np.eye(int(max_degree))[np.sum(data["adjency_matrix"][i].astype(np.int32), axis = 0) - 1] for i in range(len(data["adjency_matrix"])) ])
-        
+    
+    # aggregate = [ np.concatenate([ga,gf],axis=1) for ga, gf in zip(data["graph_degree"],graph_node_labels)]
+    # data["graph_fuse"] = np.array(aggregate)
     return data
 # Next function come from https://github.com/BorgwardtLab/WWL
 # Implement features extraction of WWL papers 
