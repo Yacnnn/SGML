@@ -162,12 +162,40 @@ class Xw4d(tf.keras.Model):
     def build_tmv2(self, feat, feat2, themax):
             tm = []
             for i in tqdm(range(len(feat)), unit = 'trprtmtrx', disable=True):
-                for j in range(len(feat)):
+                for j in range(len(feat2)):
                     # if i == j :
                     #    tm.append(  tf.zeros((themax,themax)) )
                     # if j >= i :
                     key = str(feat[i].shape[0]) + "-" + str(feat2[j].shape[0])
                     a = tf.concat( [self.transportmatrix[key], tf.zeros([themax-feat[i].shape[0],feat2[j].shape[0]])] , axis = 0) 
+                    b = tf.concat( [a, tf.zeros([themax,themax-feat2[j].shape[0]])] , axis = 1) 
+                    tm.append(  b )
+            return tf.convert_to_tensor(tm)
+
+    def build_on_tm(self, feat, themax):
+        tm = []
+        for i in tqdm(range(len(feat)), unit = 'trprtmtrx', disable=True):
+            for j in range(len(feat)):
+                # if i == j :
+                #    tm.append(  tf.zeros((themax,themax)) )
+                if j >= i :
+                    transportmatrix = uniform_transport_matrix(feat[i].shape[0],feat[j].shape[0])
+                    key = str(feat[i].shape[0]) + "-" + str(feat[j].shape[0])
+                    a = tf.concat( [transportmatrix, tf.zeros([themax-feat[i].shape[0],feat[j].shape[0]])] , axis = 0) 
+                    b = tf.concat( [a, tf.zeros([themax,themax-feat[j].shape[0]])] , axis = 1) 
+                    tm.append(  b )
+        return tf.convert_to_tensor(tm)
+
+    def build_on_tmv2(self, feat, feat2, themax):
+            tm = []
+            for i in tqdm(range(len(feat)), unit = 'trprtmtrx', disable=True):
+                for j in range(len(feat2)):
+                    # if i == j :
+                    #    tm.append(  tf.zeros((themax,themax)) )
+                    # if j >= i :
+                    transportmatrix = uniform_transport_matrix(feat[i].shape[0],feat2[j].shape[0])
+                    key = str(feat[i].shape[0]) + "-" + str(feat2[j].shape[0])
+                    a = tf.concat( [transportmatrix, tf.zeros([themax-feat[i].shape[0],feat2[j].shape[0]])] , axis = 0) 
                     b = tf.concat( [a, tf.zeros([themax,themax-feat2[j].shape[0]])] , axis = 1) 
                     tm.append(  b )
             return tf.convert_to_tensor(tm)

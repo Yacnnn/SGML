@@ -7,6 +7,7 @@ import tensorflow_probability as tfp
 import matplotlib.pyplot as plt
 from models.xw4d import Xw4d
 from tqdm import tqdm 
+from utils.process import uniform_transport_matrix
 
 class Sw4d(Xw4d):
     def __init__(self, 
@@ -35,7 +36,9 @@ class Sw4d(Xw4d):
 
     def call(self, feat, adj, lab, s):
         lab = tf.convert_to_tensor(lab)[np.newaxis,:]
-        return self.loss( self.square_distance_fast( feat, adj, self.thetalist ) , labels = lab ), 0
+        # return self.loss( self.square_distance_fast( feat, adj, self.thetalist ,False ) , labels = lab ), 0
+        return self.loss( self.square_distance( feat, adj, self.thetalist ,False ) , labels = lab ), 0
+
     
     def square_distance_fromtheta(self, feat, adj, theta, display = False):
         output = self.gcn([feat,adj])
@@ -52,6 +55,8 @@ class Sw4d(Xw4d):
                     # if key not in self.transportmatrix.keys():
                     #     self.transportmatrix[key] = uniform_transport_matrix(output[i].shape[0],output[j].shape[0])
                     #     self.transportmatrix[keyrev] = tf.transpose(self.transportmatrix[key])
+                    # dmsq.append(tf.reduce_sum(self.transportmatrix[key] * tf.math.pow(sthetamin - sthetamax, 2)))
+                    transportmatrix = uniform_transport_matrix(output[i].shape[0],output[j].shape[0])
                     dmsq.append(tf.reduce_sum(self.transportmatrix[key] * tf.math.pow(sthetamin - sthetamax, 2)))
                 else :
                     dmsq.append(0)
@@ -95,7 +100,7 @@ class Sw4d(Xw4d):
         indices = [ indices_reg[r]  for r in arg_reorder_integers]
 
         DrH_flat = tf.gather_nd(DrH,indices)
-        tm = self.build_tm(output, themax)[:,:,:,np.newaxis]
+        tm = self.build_on_tm(output, themax)[:,:,:,np.newaxis]
         tm = tf.gather(tm,arg_reorder_integers)
         Dtemp = tf.reduce_sum(tf.math.multiply(tm,DrH_flat),axis = [-3, -2,-1])
         D = tf.squeeze(tfp.math.fill_triangular(Dtemp, True))
@@ -131,9 +136,9 @@ class Sw4d(Xw4d):
         rH2 = rH2[np.newaxis,:,:]
 
         DrH_pow = tf.math.pow(rH0-rH2, 2)
-        DrH = tf.convert_to_tensor([tf.split(S, ng , axis = 1) for S in tf.split(DrH_pow, ng)])
+        DrH = tf.convert_to_tensor([tf.split(S, nd , axis = 1) for S in tf.split(DrH_pow, ng)])
 
-        tm = self.build_tmv2(output , output2, themax)[:,:,:,np.newaxis]
+        tm = self.build_on_tmv2(output , output2, themax)[:,:,:,np.newaxis]
         tm = tf.transpose(tf.reshape(tm, [ng,nd,themax,themax]), [0, 1, 2, 3])[:,:,:,:,np.newaxis]
         # tm = tf.transpose(tf.reshape(tm, [ng,nd,themax,themax]), [1, 0, 2, 3, 4])
         D = tf.reduce_sum(tf.math.multiply(tm,DrH),axis = [-3, -2,-1])
@@ -159,35 +164,24 @@ class Sw4d(Xw4d):
         DD = []
         coeff = len(feat)//40
         i = len(feat)//coeff
-        i = 20
+        i = 2
         # i = len(feat)//100
         limit = list(np.arange(0,ng,i))+[ng] 
         limit_down = limit[:-1]
         limit_up = limit[1:]
-        # if limit_up[-1] % 2 ==1 :
-        #     limit_down[-1] = limit_down[-1] - 1
-        if  not limit_up[-1] + 1 % i ==1 :
-            limit_down[-1] = limit_up[-1] - i
+        if limit_up[-1] % i ==1 :
+            del limit_down[-1]
+            limit_up[-2] = limit_up[-1]
+            del limit_up[-1]
         for hd, hu in zip(limit_down, tqdm(limit_up)):
             for vd, vu in zip(limit_down,limit_up):
                 if hd == vd :
                     d = tf.sqrt(self.square_distance_fast(output[hd:hu], [], self.thetalist, display = True))
-                    # d = tf.sqrt(self.square_distance_fromthetalistv2(feat[hd:hu], adj[hd:hu], self.thetalist, display = True))
-                    # print(np.sum(d-d0))
                     D[hd:hu,vd:vu] = d/2
-                    # d = tf.sqrt(self.square_distance_fromthetalistv3(feat[hd:hu], feat[vd:vu], adj[hd:hu], adj[vd:vu], self.thetalist, display = True))
-                    # D[hd:hu,vd:vu] = d/2
                 if hd < vd :
                     d = tf.sqrt(self.square_distance_fastv2(output[hd:hu], output[vd:vu], [], [], self.thetalist, display = True))
-                    # d = tf.sqrt(self.square_distance_fromthetalistv3(feat[hd:hu], feat[vd:vu], adj[hd:hu], adj[vd:vu], self.thetalist, display = True))
-                    # print(np.sum(d-d0))
-                    # d = tf.linalg.set_diag(d, tf.linalg.diag_part(d)/2) 
                     D[hd:hu,vd:vu] = d
         D = D + np.transpose(D)
         D = D[:,np.argsort(ind)]
         D = D[np.argsort(ind),:]
-        # D = tf.gather(D, np.argsort(ind))
-        # D = tf.transpose(D)
-        # D = D[:,list(np.argsort(ind))]
-        # D = D[np.argsort(ind),:]
         return tf.convert_to_tensor(D)
