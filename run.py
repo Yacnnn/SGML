@@ -11,7 +11,7 @@ from tqdm import tqdm
 from utils import process
 from utils import process_data
 
-from sklearn.model_selection import ParameterGrid, StratifiedKFold
+from sklearn.model_selection import ParameterGrid, StratifiedKFold, KFold
 
 from models.sw4d import Sw4d
 from models.pw4d import Pw4d
@@ -112,7 +112,7 @@ def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_trai
                         num_of_theta_sampled = sampling_nb,
                         dataset = dataset
                     )
-    # model_xw4d.build_transport_matrix(list(data["features"]))
+    model_xw4d.build_transport_matrix(list(data["features"]))
     # old_loss_d = -1
     for e in tqdm(range(num_of_iter), unit= "iter" ):
         # print( "epochs : " + str(e) + "/" + str(num_of_iter))
@@ -186,9 +186,9 @@ def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--task', default='sw4d', help='Task to execute. Only %s are currently available.'%str(process_data.available_tasks()))
-    parser.add_argument('--dataset', default='DD', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
-    parser.add_argument('--feature', default = 'degree', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
+    parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(process_data.available_tasks()))
+    parser.add_argument('--dataset', default='NCI1', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
+    parser.add_argument('--feature', default = '', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
     parser.add_argument('--loss', default = "NCCML", help='Metric learning loss')
     ###    
     parser.add_argument('--gcn', type = str, default= "sgcn" , help='Type of GCN. [SGCN].')
@@ -212,7 +212,7 @@ if __name__ == '__main__':
     parser.add_argument('--write_latent_space', type = str2bool, default = True, help='True or False. Decide whether or not to write model weights. [true, false]')
     parser.add_argument('--write_weights', type = str2bool, default = True, help='True or False. Decide whether or not to write model weights. [true, false]')
     ###
-    parser.add_argument('--device', default='0', help='Index of the target GPU. Specify \'-1\' to disable gpu support.')
+    parser.add_argument('--device', default='1', help='Index of the target GPU. Specify \'-1\' to disable gpu support.')
     parser.add_argument('--grid_search', type = str2bool, default = True, help='True or False. Decide whether or not to process a grid search. [true, false]')
     parser.add_argument('--evaluation', type = str2bool, default = True, help='True or False. Decide whether or not to evaluate latent space (evalutation function depend on the task selected). If option --num_of_run > 1 average evaluation of these run is returned. [true, false]')
     ###
@@ -252,7 +252,7 @@ if __name__ == '__main__':
     if args.grid_search :
         parameters["num_of_layer"] = [1,2,3,4]
         if args.task == "pw4d" or args.task == "sw4d":
-            parameters["feature"] = ["degree"] #["features","degree","node_labels","graph_fuse"]
+            parameters["features"] = ["node_labels"] #["features","degree","node_labels","graph_fuse"]
             parameters["loss"] =  ["NCCML"] #"NCA", "LMNN-3", 
             parameters["final_layer_dim"] = [5]
             parameters["decay_learning_rate"] = [False]
@@ -267,7 +267,7 @@ if __name__ == '__main__':
             list_of_parameters = list(ParameterGrid(parameters))
             num_list_of_parameters = len(list_of_parameters)
             for parameter_id, parameters_ in tqdm(enumerate(list_of_parameters), unit= "param"):
-                if parameter_id in [k for k in range(num_list_of_parameters)][0:2]:
+                if parameter_id in [k for k in range(num_list_of_parameters)][12:]:
                     first_run = True
                     for run_id in range(args.num_of_run):
                         parameters_ = process_data.update_path(parameters_, args.dataset+"_"+args.task, NOW, parameter_id, run_id)
@@ -296,3 +296,5 @@ if __name__ == '__main__':
             print('Unknown dataset %s'%args.dataset)
         parser.print_help()
     print("Fin.")
+
+Test
