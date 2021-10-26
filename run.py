@@ -296,5 +296,3 @@ if __name__ == '__main__':
             print('Unknown dataset %s'%args.dataset)
         parser.print_help()
     print("Fin.")
-
-Test
