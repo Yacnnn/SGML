@@ -7,7 +7,7 @@ import tensorflow_probability as tfp
 import matplotlib.pyplot as plt
 from models.xw4d import Xw4d
 from tqdm import tqdm 
-from utils.process import uniform_transport_matrix
+# from utils.process import uniform_transport_matrix
 
 class Pw4d(Xw4d):
     def __init__(self, 
@@ -36,8 +36,8 @@ class Pw4d(Xw4d):
 
     def call(self, feat, adj, lab, s):
         lab = tf.convert_to_tensor(lab)[np.newaxis,:]
-        # return self.loss( self.square_distance_fast(feat, adj, self.thetalist) , labels = lab), 0
-        return self.loss( self.square_distance(feat, adj, self.thetalist) , labels = lab), 0
+        return self.loss( self.square_distance_fast(feat, adj, self.thetalist) , labels = lab), 0
+        # return self.loss( self.square_distance(feat, adj, self.thetalist) , labels = lab), 0
 
     
     def square_distance_fromtheta(self, feat, adj, theta, display = False):
@@ -60,9 +60,9 @@ class Pw4d(Xw4d):
                     L = tf.reduce_sum(sthetamin*sthetamin, axis = 1)[:,np.newaxis] #tf.linalg.tensor_diag_part(sthetamin @ tf.transpose(sthetamin))[:,np.newaxis]
                     C = tf.reduce_sum(sthetamax*sthetamax, axis = 1)[np.newaxis,:] # tf.linalg.tensor_diag_part(sthetamax @ tf.transpose(sthetamax))[np.newaxis,:]
                     distance_temp = tf.nn.relu(L - 2*sthetamin @ tf.transpose(sthetamax) + C)
-                    # dmsq.append(tf.reduce_sum(self.transportmatrix[key] * (distance_temp) ))
-                    transportmatrix = uniform_transport_matrix(output[i].shape[0],output[j].shape[0])
-                    dmsq.append(tf.reduce_sum(transportmatrix * (distance_temp) ))
+                    dmsq.append(tf.reduce_sum(self.transportmatrix[key] * (distance_temp) ))
+                    # transportmatrix = uniform_transport_matrix(output[i].shape[0],output[j].shape[0])
+                    # dmsq.append(tf.reduce_sum(transportmatrix * (distance_temp) ))
 
                 else :
                     dmsq.append(0)
@@ -125,7 +125,7 @@ class Pw4d(Xw4d):
         indices = [ indices_reg[r]  for r in arg_reorder_integers]
 
         DrH_flat = tf.gather_nd(DrH,indices)
-        tm = self.build_on_tm(output, themax)[:,:,:,np.newaxis]
+        tm = self.build_tm(output, themax)[:,:,:,np.newaxis]
         tm = tf.gather(tm,arg_reorder_integers)
         Dtemp = tf.reduce_sum(tf.math.multiply(tm,DrH_flat),axis = [-3, -2,-1])
         D = tf.squeeze(tfp.math.fill_triangular(Dtemp, True))
@@ -173,7 +173,7 @@ class Pw4d(Xw4d):
         DrH = tf.reshape(DrH, [ng, nd, themax, themax, nf, -1])
         DrH = np.sum(DrH, axis = 4)
 
-        tm = self.build_on_tmv2(output , output2, themax)[:,:,:,np.newaxis]
+        tm = self.build_tmv2(output , output2, themax)[:,:,:,np.newaxis]
         tm = tf.transpose(tf.reshape(tm, [ng,nd,themax,themax]), [0, 1, 2, 3])[:,:,:,:,np.newaxis]
         D = tf.reduce_sum(tf.math.multiply(tm,DrH),axis = [-3, -2,-1])
         return D/n

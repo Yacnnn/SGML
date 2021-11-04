@@ -201,12 +201,12 @@ def evaluate_knn_cv(embeddings_list,labels,list_of_parameters, list_of_run_path,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--task', default='sw4d', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
-    parser.add_argument('--dataset', default='MUTAG', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
+    parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
+    parser.add_argument('--dataset', default='NCI1', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
     parser.add_argument('--date', default='', help='[MONTH]_[DAY]_[YEAR]_[HOUR]h[MINUTES]m[SECONDES]s')
     args = parser.parse_args()
     if args.task in available_tasks():
-        search_path_tab = ['results/'+args.dataset+"_"+args.task+'/'+args.date]
+        search_path_tab = ['/scratch/ykaloga/results/'+args.dataset+"_"+args.task+'/'+args.date]
         if args.date == '':
             search_path_tab = glob.glob(search_path_tab[0]+'/*')
         for search_path in search_path_tab :

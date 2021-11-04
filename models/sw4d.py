@@ -7,7 +7,7 @@ import tensorflow_probability as tfp
 import matplotlib.pyplot as plt
 from models.xw4d import Xw4d
 from tqdm import tqdm 
-from utils.process import uniform_transport_matrix
+# from utils.process import uniform_transport_matrix
 
 class Sw4d(Xw4d):
     def __init__(self, 
@@ -36,8 +36,8 @@ class Sw4d(Xw4d):
 
     def call(self, feat, adj, lab, s):
         lab = tf.convert_to_tensor(lab)[np.newaxis,:]
-        # return self.loss( self.square_distance_fast( feat, adj, self.thetalist ,False ) , labels = lab ), 0
-        return self.loss( self.square_distance( feat, adj, self.thetalist ,False ) , labels = lab ), 0
+        return self.loss( self.square_distance_fast( feat, adj, self.thetalist ,False ) , labels = lab ), 0
+        # return self.loss( self.square_distance( feat, adj, self.thetalist ,False ) , labels = lab ), 0
 
     
     def square_distance_fromtheta(self, feat, adj, theta, display = False):
@@ -55,9 +55,9 @@ class Sw4d(Xw4d):
                     # if key not in self.transportmatrix.keys():
                     #     self.transportmatrix[key] = uniform_transport_matrix(output[i].shape[0],output[j].shape[0])
                     #     self.transportmatrix[keyrev] = tf.transpose(self.transportmatrix[key])
-                    # dmsq.append(tf.reduce_sum(self.transportmatrix[key] * tf.math.pow(sthetamin - sthetamax, 2)))
-                    transportmatrix = uniform_transport_matrix(output[i].shape[0],output[j].shape[0])
                     dmsq.append(tf.reduce_sum(self.transportmatrix[key] * tf.math.pow(sthetamin - sthetamax, 2)))
+                    # transportmatrix = uniform_transport_matrix(output[i].shape[0],output[j].shape[0])
+                    # dmsq.append(tf.reduce_sum(transportmatrix * tf.math.pow(sthetamin - sthetamax, 2)))
                 else :
                     dmsq.append(0)
         distances_sq = tf.reshape(dmsq,[len(output),len(output)])
@@ -69,6 +69,7 @@ class Sw4d(Xw4d):
         n = thetalist.shape[1]
         for t in range(n): 
             distances_sq += self.square_distance_fromtheta(feat, adj, thetalist[:,t:t+1], display)/n
+            # distances_sq += self.square_distance_fast(feat, adj, thetalist[:,t:t+1], display)/n
         return distances_sq
 
     def square_distance_fast(self, feat, adj, thetalist, display = False):
@@ -100,7 +101,7 @@ class Sw4d(Xw4d):
         indices = [ indices_reg[r]  for r in arg_reorder_integers]
 
         DrH_flat = tf.gather_nd(DrH,indices)
-        tm = self.build_on_tm(output, themax)[:,:,:,np.newaxis]
+        tm = self.build_tm(output, themax)[:,:,:,np.newaxis]
         tm = tf.gather(tm,arg_reorder_integers)
         Dtemp = tf.reduce_sum(tf.math.multiply(tm,DrH_flat),axis = [-3, -2,-1])
         D = tf.squeeze(tfp.math.fill_triangular(Dtemp, True))
@@ -138,7 +139,7 @@ class Sw4d(Xw4d):
         DrH_pow = tf.math.pow(rH0-rH2, 2)
         DrH = tf.convert_to_tensor([tf.split(S, nd , axis = 1) for S in tf.split(DrH_pow, ng)])
 
-        tm = self.build_on_tmv2(output , output2, themax)[:,:,:,np.newaxis]
+        tm = self.build_tmv2(output , output2, themax)[:,:,:,np.newaxis]
         tm = tf.transpose(tf.reshape(tm, [ng,nd,themax,themax]), [0, 1, 2, 3])[:,:,:,:,np.newaxis]
         # tm = tf.transpose(tf.reshape(tm, [ng,nd,themax,themax]), [1, 0, 2, 3, 4])
         D = tf.reduce_sum(tf.math.multiply(tm,DrH),axis = [-3, -2,-1])
@@ -164,7 +165,7 @@ class Sw4d(Xw4d):
         DD = []
         coeff = len(feat)//40
         i = len(feat)//coeff
-        i = 2
+        i = 20
         # i = len(feat)//100
         limit = list(np.arange(0,ng,i))+[ng] 
         limit_down = limit[:-1]
