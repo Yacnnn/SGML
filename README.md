@@ -17,18 +17,18 @@ The purpose of this repository is to make reproductible all experiences on this 
 
 ### Abstract 
 
-The choice of good distances and similarity measures between objects
-is important for many machine learning methods. Therefore, many
-metric learning algorithms have been developed in recent years, mainly for Euclidean data in order to improve performance of classification or clustering methods. 
-However, due to difficulties in establishing computable, efficient and
-differentiable distances between attributed graphs, few metric learning algorithms adapted to graphs have been developed despite the strong interest of the community.
-In this paper, we address this issue by proposing 
-a new Simple Graph Metric Learning - SGML - model with few trainable parameters based on Simple
-Convolutional Neural Networks - SGCN - and elements of optimal transport
-theory. This model allows us to build an appropriate distance from  a
-database of labeled (attributed) graphs to improve the performance of simple classification algorithms such as $k$-NN. This distance can be quickly trained while maintaining
-good performances as illustrated by the experimental study presented
-in this paper. 
+    The choice of good distances and similarity measures between objects
+    is important for many machine learning methods. Therefore, many
+    metric learning algorithms have been developed in recent years, mainly for Euclidean data in order to improve performance of classification or clustering methods. 
+    However, due to difficulties in establishing computable, efficient and
+    differentiable distances between attributed graphs, few metric learning algorithms adapted to graphs have been developed despite the strong interest of the community.
+    In this paper, we address this issue by proposing 
+    a new Simple Graph Metric Learning - SGML - model with few trainable parameters based on Simple
+    Convolutional Neural Networks - SGCN - and elements of optimal transport
+    theory. This model allows us to build an appropriate distance from  a
+    database of labeled (attributed) graphs to improve the performance of simple classification algorithms such as $k$-NN. This distance can be quickly trained while maintaining
+    good performances as illustrated by the experimental study presented
+    in this paper. 
 
 ## USAGE
 
