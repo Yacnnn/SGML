@@ -15,6 +15,21 @@
 
 The purpose of this repository is to make reproductible all experiences on this paper [Under IJCAI review]. These experiments consists in building a OT distance between graphs and use it to perform classification either with k-nn algorithm or SVM with a kernel built from the distance. The OT distance is learned from a differentiable GCN : SGCN [https://arxiv.org/pdf/1902.07153.pdf] and classical Metric Learning method/loss in literature : NCA [Goldberger et al, 2004, https://www.cs.toronto.edu/~hinton/absps/nca.pdf] and NCCML (inspired from NCMML [Mensink et al, 2012, https://hal.inria.fr/hal-00722313/document]) which is introduce in the paper. 
 
+### Abstract 
+
+The choice of good distances and similarity measures between objects
+is important for many machine learning methods. Therefore, many
+metric learning algorithms have been developed in recent years, mainly for Euclidean data in order to improve performance of classification or clustering methods. 
+However, due to difficulties in establishing computable, efficient and
+differentiable distances between attributed graphs, few metric learning algorithms adapted to graphs have been developed despite the strong interest of the community.
+In this paper, we address this issue by proposing 
+a new Simple Graph Metric Learning - SGML - model with few trainable parameters based on Simple
+Convolutional Neural Networks - SGCN - and elements of optimal transport
+theory. This model allows us to build an appropriate distance from  a
+database of labeled (attributed) graphs to improve the performance of simple classification algorithms such as $k$-NN. This distance can be quickly trained while maintaining
+good performances as illustrated by the experimental study presented
+in this paper. 
+
 ## USAGE
 
 ### Dataset
