@@ -137,12 +137,6 @@ def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_trai
         print("avg_loss_d : ", str(acc_loss_d) )
         if e + 1  in save_iter  and e != num_of_iter - 1 :
             D, t = model_xw4d.distance_fastv2(list(data["features"]),list(data["structures"]))
-            print(t)
-            print(t)
-            print(t)
-            print(t)
-            print(t)
-
             parameters_copy = parameters.copy()
             parameters_copy["num_of_iter"] = e + 1
             save_distance(distance = D.numpy(), parameters = parameters_copy , title_extension= "_iter"+str(e + 1))   
@@ -157,8 +151,7 @@ def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False,
     Generate the Wasserstein distance matrix for the graphs embedded 
     in label_sequences
     '''
-    label_sequences = label_sequences[:400]
-  
+    # label_sequences = label_sequences[:400]
     # Get the iteration number from the embedding file
     n = len(label_sequences)
     emb_size = label_sequences[0].shape[1]
@@ -190,8 +183,8 @@ def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False,
         M = (M + M.T)
         wasserstein_distances.append(M)
         print(f'Iteration {h}: done.')
-    end = time.time()
-    print("time :"+str(end - start))
+    # end = time.time()
+    # print("time :"+str(end - start))
     save_distance(wasserstein_distances[-1], parameters)
     print("top2")
     return wasserstein_distances
@@ -290,8 +283,7 @@ if __name__ == '__main__':
                             data = process_data.load_dataset(args.dataset, parameters_["features"])
                             distance = compute_dataset_distance(parameters_, data, "pw4d", parameters_["partial_train"], run_id)
                         if args.task == "wwl":
-                            print("top")
-                            start = time.time() 
+                            # start = time.time() 
                             data = process_data.load_dataset(args.dataset, parameters_["features"], h = parameters_["num_of_layer"])
                             isdiscrete = True if parameters_["features"] == "node_labels" or parameters_["features"] == "degree" else False
                             distance = compute_wasserstein_distance(data["features"],parameters_, h = parameters_["num_of_layer"], sinkhorn=False, discrete= isdiscrete, sinkhorn_lambda=1e-2)[-1]
@@ -309,4 +301,4 @@ if __name__ == '__main__':
         if args.dataset in  process_data.available_datasets():
             print('Unknown dataset %s'%args.dataset)
         parser.print_help()
-    print("Fin.")#aaaa
+    print("Fin.")
