@@ -97,7 +97,7 @@ def evaluate_kernel_cv(embeddings_list,labels,list_of_parameters, list_of_run_pa
     svm_test_acc_results = np.zeros((cross_valid_max ,nb_parameters,nb_run))
     labels = np.array([int(l) for l in labels])
     kernels  = [ [ [np.exp(-g*run) for g in gammas] for run in parameters] for parameters in embeddings_list]
-    classif_tuned_parameters = {'C': [1]+list(np.logspace(-3,3,8))}
+    classif_tuned_parameters = {'C': [1]+list(np.logspace(-4,5,12))}#list(np.logspace(-3,3,8))}
     cv = StratifiedKFold(n_splits=cross_valid , shuffle=True)
     param_number_str_list = [list_of_run_path[p][0].split('parameters')[-1].split("_success")[0] for p in range(nb_parameters)]
     for p in range(nb_parameters):
@@ -202,14 +202,14 @@ def evaluate_knn_cv(embeddings_list,labels,list_of_parameters, list_of_run_path,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
-    parser.add_argument('--dataset', default='NCI1', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
+    parser.add_argument('--dataset', default='MUTAG', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
     parser.add_argument('--date', default='', help='[MONTH]_[DAY]_[YEAR]_[HOUR]h[MINUTES]m[SECONDES]s')
     args = parser.parse_args()
     if args.task in available_tasks():
-        search_path_tab = ['/scratch/ykaloga/results/'+args.dataset+"_"+args.task+'/'+args.date]
+        search_path_tab = ['/scratch/ykaloga/resultscontinuous/results/'+args.dataset+"_"+args.task+'/'+args.date]
         if args.date == '':
             search_path_tab = glob.glob(search_path_tab[0]+'/*')
-        for search_path in search_path_tab :
+        for search_path in search_path_tab:
             if os.path.isdir(search_path):
                 list_of_parameters = [] 
                 list_of_run_path = [] 

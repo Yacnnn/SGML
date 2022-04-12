@@ -14,8 +14,9 @@ from scipy.spatial.distance import cdist
 from sklearn.base import TransformerMixin
 from collections import defaultdict
 
-ROOTDIR = "/scratch/ykaloga/resultsnodeslab/"
-# ROOTDIR = "/scratch/ykaloga/resultscontinuous/"
+# ROOTDIR = "/scratch/ykaloga/resultsnodeslab/"
+# ROOTDIR = "/scratch/ykaloga/resultsdiscrete/"
+ROOTDIR = "/scratch/ykaloga/resultscontinuous/"
 # ROOTDIR = "/scratch/ykaloga/"
 
 def available_tasks():
@@ -24,7 +25,7 @@ def available_tasks():
 
 def available_datasets():
     """ Return list of available datasets. """
-    return ["Alkane","ENZYMES","NCI109","NCI1","PTC_MR","MUTAG","DD","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform"]
+    return ["Alkane","ENZYMES","NCI109","NCI1","PTC_MR","PTC_FR","MUTAG","DD","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform"]
 
 def available_features():
     """ Return list of available datasets. """
@@ -32,7 +33,7 @@ def available_features():
 
 def available_features_per_datasets(dataset):
     """ Return list of available feature for a given dataset. """
-    if dataset in ["NCI109","NCI1","PTC_MR","MUTAG","DD"]:
+    if dataset in ["NCI109","NCI1","PTC_MR","PTC_FR","MUTAG","DD"]:
         return ["node_labels", "degree"]
     if dataset in ["ENZYMES","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform"]:
         return ["attributes", "node_labels", "fuse", "degree"]
@@ -58,7 +59,7 @@ def load_dataset(dataset, feature = "attributes", h = 0):
     if feature not in available_features_per_datasets(dataset):
         print("No "+feature+" in "+dataset)
         sys.exit()
-    if dataset in ["NCI109","NCI1","PTC_MR","MUTAG","DD","ENZYMES","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform"]:
+    if dataset in ["NCI109","NCI1","PTC_MR","PTC_FR","MUTAG","DD","ENZYMES","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform"]:
         data = load_drtmnd_dataset(dataset, use_attributes_if_exist = True) 
         feature_key = "node_labels" if feature == "node_labels" else "graph_features" if feature == "attributes" else "graph_fuse" if feature == "fuse" else "graph_degree"
     elif dataset in ["Alkane"]:

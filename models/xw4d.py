@@ -45,6 +45,8 @@ class Xw4d(tf.keras.Model):
         self.update_theta()
         
     def set_layer_size(self, shape):
+        if self.num_of_layer == 0 :
+            self.final_layer_dim = shape[0][1]
         if self.hidden_layer_dim == 0 :
             self.hidden_layer_dim = shape[0][1]
         if self.final_layer_dim == 0 :
@@ -53,6 +55,8 @@ class Xw4d(tf.keras.Model):
             self.final_layer_dim = int(shape[0][1] /2) if shape[0][1] % 2 == 0 else int(np.ceil( shape[0][1] /2 ))
         if self.final_layer_dim == -2 :
             self.final_layer_dim = int(shape[0][1] /4) if shape[0][1] % 4 == 0 else int(np.ceil(  shape[0][1] /4 ))
+        if shape[0][1] < 5 :
+            self.final_layer_dim = shape[0][1]
 
     def set_gcn(self, nonlinearity):
         if "sgcn" in self.gcn_type:

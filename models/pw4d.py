@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from models.xw4d import Xw4d
 from tqdm import tqdm 
 # from utils.process import uniform_transport_matrix
+import time
 
 class Pw4d(Xw4d):
     def __init__(self, 
@@ -125,7 +126,7 @@ class Pw4d(Xw4d):
         indices = [ indices_reg[r]  for r in arg_reorder_integers]
 
         DrH_flat = tf.gather_nd(DrH,indices)
-        tm = self.build_tm(output, themax)[:,:,:,np.newaxis]
+        tm = self.build_on_tm(output, themax)[:,:,:,np.newaxis]
         tm = tf.gather(tm,arg_reorder_integers)
         Dtemp = tf.reduce_sum(tf.math.multiply(tm,DrH_flat),axis = [-3, -2,-1])
         D = tf.squeeze(tfp.math.fill_triangular(Dtemp, True))
@@ -173,7 +174,7 @@ class Pw4d(Xw4d):
         DrH = tf.reshape(DrH, [ng, nd, themax, themax, nf, -1])
         DrH = np.sum(DrH, axis = 4)
 
-        tm = self.build_tmv2(output , output2, themax)[:,:,:,np.newaxis]
+        tm = self.build_on_tmv2(output , output2, themax)[:,:,:,np.newaxis]
         tm = tf.transpose(tf.reshape(tm, [ng,nd,themax,themax]), [0, 1, 2, 3])[:,:,:,:,np.newaxis]
         D = tf.reduce_sum(tf.math.multiply(tm,DrH),axis = [-3, -2,-1])
         return D/n
@@ -185,10 +186,11 @@ class Pw4d(Xw4d):
         return tf.sqrt(self.square_distance_fast(feat, adj, thetalist, display))
 
     def distance_fastv2(self, feat, adj):
-        feat = feat#[:400]
-        adj = adj#[:400]
+        feat = feat[:400]
+        adj = adj[:400]
         output = self.gcn([feat,adj])
-
+        print("top")
+        start = time.time() 
         ind = np.argsort([len(o) for o in output]) 
         output = [ output[i] for i in ind]
 
@@ -197,7 +199,7 @@ class Pw4d(Xw4d):
         DD = []
         # coeff = len(feat)//40
         # i = len(feat)//coeff
-        i = 10
+        i = 12#10
         # i = len(feat)//400
         limit = list(np.arange(0,ng,i))+[ng] 
         limit_down = limit[:-1]
@@ -217,4 +219,9 @@ class Pw4d(Xw4d):
         D = D + np.transpose(D)
         D = D[:,np.argsort(ind)]
         D = D[np.argsort(ind),:]
-        return tf.convert_to_tensor(D)
+        end = time.time()
+        # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+        # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+        # print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+        print(end - start)
+        return tf.convert_to_tensor(D), end - start

@@ -153,8 +153,8 @@ class Sw4d(Xw4d):
         return tf.sqrt(self.square_distance_fast(feat, adj, thetalist, display))
 
     def distance_fastv2(self, feat, adj):
-        feat = feat
-        adj = adj
+        feat = feat[:400]
+        adj = adj[:400]
         output = self.gcn([feat,adj])
 
         ind = np.argsort([len(o) for o in output]) 

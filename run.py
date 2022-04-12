@@ -4,6 +4,7 @@ import ot
 import numpy as np
 import scipy.io as sio
 import tensorflow as tf
+import time
 
 from datetime import datetime
 from tqdm import tqdm
@@ -135,7 +136,13 @@ def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_trai
         # print("loss_d : ", str(loss_d) )
         print("avg_loss_d : ", str(acc_loss_d) )
         if e + 1  in save_iter  and e != num_of_iter - 1 :
-            D = model_xw4d.distance_fastv2(list(data["features"]),list(data["structures"]))
+            D, t = model_xw4d.distance_fastv2(list(data["features"]),list(data["structures"]))
+            print(t)
+            print(t)
+            print(t)
+            print(t)
+            print(t)
+
             parameters_copy = parameters.copy()
             parameters_copy["num_of_iter"] = e + 1
             save_distance(distance = D.numpy(), parameters = parameters_copy , title_extension= "_iter"+str(e + 1))   
@@ -150,6 +157,8 @@ def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False,
     Generate the Wasserstein distance matrix for the graphs embedded 
     in label_sequences
     '''
+    label_sequences = label_sequences[:400]
+  
     # Get the iteration number from the embedding file
     n = len(label_sequences)
     emb_size = label_sequences[0].shape[1]
@@ -163,9 +172,9 @@ def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False,
         # Iterate over pairs of graphs
         for graph_index_1, graph_1 in enumerate(label_sequences):
             # Only keep the embeddings for the first h iterations
-            labels_1 = label_sequences[graph_index_1][:,:n_feat*(h+1)]
+            labels_1 = label_sequences[graph_index_1][:,n_feat*(h):n_feat*(h+1)]
             for graph_index_2, graph_2 in enumerate(label_sequences[graph_index_1:]):
-                labels_2 = label_sequences[graph_index_2 + graph_index_1][:,:n_feat*(h+1)]
+                labels_2 = label_sequences[graph_index_2 + graph_index_1][:,n_feat*(h):n_feat*(h+1)]
                 # Get cost matrix
                 ground_distance = 'hamming' if discrete else 'euclidean'
                 costs = ot.dist(labels_1, labels_2, metric=ground_distance)
@@ -181,14 +190,17 @@ def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False,
         M = (M + M.T)
         wasserstein_distances.append(M)
         print(f'Iteration {h}: done.')
+    end = time.time()
+    print("time :"+str(end - start))
     save_distance(wasserstein_distances[-1], parameters)
+    print("top2")
     return wasserstein_distances
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(process_data.available_tasks()))
     parser.add_argument('--dataset', default='NCI1', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
-    parser.add_argument('--feature', default = '', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
+    parser.add_argument('--feature', default = 'node_labels', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
     parser.add_argument('--loss', default = "NCCML", help='Metric learning loss')
     ###    
     parser.add_argument('--gcn', type = str, default= "sgcn" , help='Type of GCN. [SGCN].')
@@ -212,7 +224,7 @@ if __name__ == '__main__':
     parser.add_argument('--write_latent_space', type = str2bool, default = True, help='True or False. Decide whether or not to write model weights. [true, false]')
     parser.add_argument('--write_weights', type = str2bool, default = True, help='True or False. Decide whether or not to write model weights. [true, false]')
     ###
-    parser.add_argument('--device', default='1', help='Index of the target GPU. Specify \'-1\' to disable gpu support.')
+    parser.add_argument('--device', default='0', help='Index of the target GPU. Specify \'-1\' to disable gpu support.')
     parser.add_argument('--grid_search', type = str2bool, default = True, help='True or False. Decide whether or not to process a grid search. [true, false]')
     parser.add_argument('--evaluation', type = str2bool, default = True, help='True or False. Decide whether or not to evaluate latent space (evalutation function depend on the task selected). If option --num_of_run > 1 average evaluation of these run is returned. [true, false]')
     ###
@@ -250,16 +262,16 @@ if __name__ == '__main__':
     parameters["write_weights"] =  [args.write_weights] 
     parameters["evaluation"] = [args.evaluation] 
     if args.grid_search :
-        parameters["num_of_layer"] = [1,2,3,4]
+        parameters["num_of_layer"] = [4]#[0,1,2,3,4]
         if args.task == "pw4d" or args.task == "sw4d":
             parameters["features"] = ["node_labels"] #["features","degree","node_labels","graph_fuse"]
-            parameters["loss"] =  ["NCCML"] #"NCA", "LMNN-3", 
+            parameters["loss"] =  ["NCCML"] #"NCA", "LMNN-3", Our vectorize implementation
             parameters["final_layer_dim"] = [5]
             parameters["decay_learning_rate"] = [False]
-            parameters["partial_train"] = [0.9,0.2]
-            parameters["sampling_type"] = ["ortho",'basis']
+            parameters["partial_train"] = [0.9]#[0.9,0.2]
+            parameters["sampling_type"] = ["basis"]#["ortho",'basis']
             parameters["nonlinearity"] = ["relu"]
-            parameters["num_of_iter"] = [10]
+            parameters["num_of_iter"] = [1]
             parameters["sampling_nb"] = [50] 
             parameters["batch_size"] = [8] 
     if args.task in process_data.available_tasks() and args.dataset in process_data.available_datasets():
@@ -267,7 +279,7 @@ if __name__ == '__main__':
             list_of_parameters = list(ParameterGrid(parameters))
             num_list_of_parameters = len(list_of_parameters)
             for parameter_id, parameters_ in tqdm(enumerate(list_of_parameters), unit= "param"):
-                if parameter_id in [k for k in range(num_list_of_parameters)][12:]:
+                if parameter_id in [k for k in range(num_list_of_parameters)]:
                     first_run = True
                     for run_id in range(args.num_of_run):
                         parameters_ = process_data.update_path(parameters_, args.dataset+"_"+args.task, NOW, parameter_id, run_id)
@@ -278,6 +290,8 @@ if __name__ == '__main__':
                             data = process_data.load_dataset(args.dataset, parameters_["features"])
                             distance = compute_dataset_distance(parameters_, data, "pw4d", parameters_["partial_train"], run_id)
                         if args.task == "wwl":
+                            print("top")
+                            start = time.time() 
                             data = process_data.load_dataset(args.dataset, parameters_["features"], h = parameters_["num_of_layer"])
                             isdiscrete = True if parameters_["features"] == "node_labels" or parameters_["features"] == "degree" else False
                             distance = compute_wasserstein_distance(data["features"],parameters_, h = parameters_["num_of_layer"], sinkhorn=False, discrete= isdiscrete, sinkhorn_lambda=1e-2)[-1]
