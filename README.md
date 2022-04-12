@@ -53,7 +53,6 @@ All dataset in the paper can be found on :  https://ls11-www.cs.tu-dortmund.de/s
     parser.add_argument('--evaluation', type = str2bool, default = True, help='True or False. Decide whether or not to evaluate latent space (evalutation function depend on the task selected). If option --num_of_run > 1 average evaluation of these run is returned. [true, false]')
 
 ### Example paper grid search 
-The grid search parameters can be set at line 257. The parameters of the search grid have priority over others.
 
 #### MUTAG (with node labels) with Projected (Restricted) Sliced Wasserstein 
 
@@ -68,7 +67,9 @@ Computed distances are written in results folder.
 
 Results files can be found on results folder.
 
-### Particular Example
+The grid search parameters can be set at line 257 of run.py file. The parameters of the search grid have priority over others.
+
+### Specific Example
 
 #### MUTAG (with node labels) with Projected Restricted Sliced Wasserstein
 
@@ -110,3 +111,5 @@ Results files can be found on results folder.
 ##### Evaluate command (custom kernel SVM and k-nn)
  
     python3 evaluate.py -task sw4d --dataset BZR
+
+WWL and a sliced version SWWL can be also run in the same way, however there is no adaptation since the features are generated for these models by a non trainable GCN (Weisfeiler-Lheman features).
