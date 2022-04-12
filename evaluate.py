@@ -186,17 +186,17 @@ def evaluate_knn_cv(embeddings_list,labels,list_of_parameters, list_of_run_path,
             index = ['fold_id{}'.format(i) for i in range(cross_valid_max)]
             pd.DataFrame(np.array(data_columns).T, 
             columns=columns, 
-            index=index).to_csv(list_of_run_path[p][r]+"/evaluation/evaluation_kmeans.csv")
+            index=index).to_csv(list_of_run_path[p][r]+"/evaluation/evaluation_knn.csv")
             if cross_valid_max == 1 :
                     addseed += 1
         pd.DataFrame(np.array([[list_of_parameters[p][c][0]] for c in columns0 ]+[[np.mean(knn_valid_acc_results[:,p,:])],[np.mean(knn_test_acc_results[:,p,:])],[np.std(knn_test_acc_results[:,p,:])]]).T, 
                 columns=columns0+['knn_valid_mean','knn_test_mean','knn_test_std'] ,
-                index=['parameters '+param_number_str_list[p]]).to_csv(list_of_run_path[p][r].split('run')[0]+'parameters_evaluation_kmeans.csv')
+                index=['parameters '+param_number_str_list[p]]).to_csv(list_of_run_path[p][r].split('run')[0]+'parameters_evaluation_knn.csv')
     #---------------
     arr = np.concatenate([np.array([[list_of_parameters[p][c][0]] for c in columns0 ]+[[np.mean(knn_valid_acc_results[:,p,:])],[np.mean(knn_test_acc_results[:,p,:])],[np.std(knn_test_acc_results[:,p,:])]]).T for p in range(len(list_of_parameters))] , axis = 0 )
     pd.DataFrame(arr, 
             columns=columns0+['knn_valid_mean','knn_test_mean','knn_test_std'] ,
-            index=['parameters '+param_number_str_list[p] for p in range(len(list_of_parameters))]).to_csv(search_path+'/parameters_evaluation_kmeans.csv')
+            index=['parameters '+param_number_str_list[p] for p in range(len(list_of_parameters))]).to_csv(search_path+'/parameters_evaluation_knn.csv')
     return np.mean(knn_valid_acc_results,axis = (0,1)), np.mean(knn_test_acc_results,axis = (0,1))
 
 if __name__ == '__main__':
@@ -206,7 +206,7 @@ if __name__ == '__main__':
     parser.add_argument('--date', default='', help='[MONTH]_[DAY]_[YEAR]_[HOUR]h[MINUTES]m[SECONDES]s')
     args = parser.parse_args()
     if args.task in available_tasks():
-        search_path_tab = ['/scratch/ykaloga/resultscontinuous/results/'+args.dataset+"_"+args.task+'/'+args.date]
+        search_path_tab = ['./results/'+args.dataset+"_"+args.task+'/'+args.date]
         if args.date == '':
             search_path_tab = glob.glob(search_path_tab[0]+'/*')
         for search_path in search_path_tab:

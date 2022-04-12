@@ -255,7 +255,7 @@ if __name__ == '__main__':
     parameters["write_weights"] =  [args.write_weights] 
     parameters["evaluation"] = [args.evaluation] 
     if args.grid_search :
-        parameters["num_of_layer"] = [4]#[0,1,2,3,4]
+        parameters["num_of_layer"] = [0,1,2,3,4]
         if args.task == "pw4d" or args.task == "sw4d":
             parameters["features"] = ["node_labels"] #["features","degree","node_labels","graph_fuse"]
             parameters["loss"] =  ["NCCML"] #"NCA", "LMNN-3", Our vectorize implementation
