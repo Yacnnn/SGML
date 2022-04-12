@@ -13,7 +13,7 @@
 
 ## Goal
 
-The purpose of this repository is to make reproductible all experiences on this paper [Under IJCAI review]. These experiments consists in building a OT distance between graphs and use it to perform classification either with k-nn algorithm or SVM with a kernel build from the distance. The OT distance is learned from a differitable GCN : SGCN and classical Metric Learning method/loss in literature : NCA, LMNN, NCMML or NCCML which is introduce in the paper. 
+The purpose of this repository is to make reproductible all experiences on this paper [Under IJCAI review]. These experiments consists in building a OT distance between graphs and use it to perform classification either with k-nn algorithm or SVM with a kernel built from the distance. The OT distance is learned from a differentiable GCN : SGCN [https://arxiv.org/pdf/1902.07153.pdf] and classical Metric Learning method/loss in literature : NCA [Goldberger et al, 2004, https://www.cs.toronto.edu/~hinton/absps/nca.pdf] and NCCML (inspired from NCMML [Mensink et al, 2012, https://hal.inria.fr/hal-00722313/document]) which is introduce in the paper. 
 
 ## USAGE
 
