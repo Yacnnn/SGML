@@ -13,7 +13,25 @@
 
 ## Goal
 
-The purpose of this repository is to make reproductible all experiences on this paper [Under IJCAI review]. These experiments consists in building a OT distance between graphs and use it to perform classification either with k-nn algorithm or with SVM with a kernel build from the metric. The OT distance is learned from a differitable GCN : SGCN and classical Metric Learning method/loss in literature : NCA, LMNN, NCMML or NCCML which is introduce in the paper. 
+The purpose of this repository is to make reproductible all experiences on this paper [Under IJCAI review]. These experiments consists in building a OT distance between graphs and use it to perform classification either with k-nn algorithm or SVM with a kernel built from the distance. The OT distance is learned from a differentiable GCN : SGCN [https://arxiv.org/pdf/1902.07153.pdf] and classical Metric Learning method/loss in literature : NCA [Goldberger et al, 2004, https://www.cs.toronto.edu/~hinton/absps/nca.pdf] and NCCML (inspired from NCMML [Mensink et al, 2012, https://hal.inria.fr/hal-00722313/document]) which is introduce in the paper. 
+
+### Abstract 
+
+    The choice of good distances and similarity measures between objects
+    is important for many machine learning methods. Therefore, many
+    metric learning algorithms have been developed in recent years, mainly for Euclidean 
+    data in order to improve performance of classification or clustering methods. 
+    However, due to difficulties in establishing computable, efficient and
+    differentiable distances between attributed graphs, few metric learning algorithms 
+    adapted to graphs have been developed despite the strong interest of the community.
+    In this paper, we address this issue by proposing a new Simple Graph Metric 
+    Learning - SGML - model with few trainable parameters based on Simple
+    Convolutional Neural Networks - SGCN - and elements of optimal transport
+    theory. This model allows us to build an appropriate distance from  a
+    database of labeled (attributed) graphs to improve the performance of simple 
+    classification algorithms such as $k$-NN. This distance can be quickly trained while 
+    maintaining good performances as illustrated by the experimental study presented
+    in this paper. 
 
 ## USAGE
 
@@ -58,7 +76,7 @@ All dataset in the paper can be found on :  https://ls11-www.cs.tu-dortmund.de/s
 
 ##### Training command
 
-    python3 run.py -task psw4d  --grid_search True --num_of_run 10
+    python3 run.py -task psw4d  --grid_search True
 
 Computed distances are written in results folder.
 ##### Evaluate command (custom kernel SVM and k-nn)
@@ -67,7 +85,19 @@ Computed distances are written in results folder.
 
 Results files can be found on results folder.
 
-The grid search parameters can be set at line 257 of run.py file. The parameters of the search grid have priority over others.
+./results/DATASET_METHOD/TIMESTAMP/(*).csv for gird search global results
+
+./results/DATASET_METHOD/TIMESTAMP/parameters(*)_sucess/run(*)/evaluation/(*).csv for specific (parameters sets,run) results
+
+The grid search parameters can be set between line 260 and 288 of run.py file. The parameters of the search grid have priority over others (when grid_search is set to True).
+
+Note: For PROTEINS you must specify wheter you wants to use concatenation of node labels and continuous features or only node labels. i.e:
+
+    python3 evaluate.py -task psw4d --dataset PROTEINS --feature fuse
+
+or
+
+    python3 evaluate.py -task psw4d --dataset PROTEINS --feature node_labels
 
 ### Specific Example
 
