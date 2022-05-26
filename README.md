@@ -85,8 +85,9 @@ Computed distances are written in results folder.
 
 Results files can be found on results folder.
 
-./results/DATASET_METHOD/TIMESTAMP/*.csv for gird search global results
-./results/DATASET_METHOD/TIMESTAMP/parameters*_sucess/run*/evaluation/*.csv for specific (parameters sets,run) results
+./results/DATASET_METHOD/TIMESTAMP/(*).csv for gird search global results
+
+./results/DATASET_METHOD/TIMESTAMP/parameters(*)_sucess/run(*)/evaluation/(*).csv for specific (parameters sets,run) results
 
 The grid search parameters can be set between line 260 and 288 of run.py file. The parameters of the search grid have priority over others (when grid_search is set to True).
 
