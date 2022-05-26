@@ -76,7 +76,7 @@ All dataset in the paper can be found on :  https://ls11-www.cs.tu-dortmund.de/s
 
 ##### Training command
 
-    python3 run.py -task psw4d  --grid_search True --num_of_run 10
+    python3 run.py -task psw4d  --grid_search True
 
 Computed distances are written in results folder.
 ##### Evaluate command (custom kernel SVM and k-nn)
