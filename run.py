@@ -5,12 +5,12 @@ import numpy as np
 import scipy.io as sio
 import tensorflow as tf
 import time
-
 from datetime import datetime
 from tqdm import tqdm
 
 from utils import process
 from utils import process_data
+from utils import utils
 
 from sklearn.model_selection import ParameterGrid, StratifiedKFold, KFold
 
@@ -113,7 +113,8 @@ def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_trai
                         num_of_theta_sampled = sampling_nb,
                         dataset = dataset
                     )
-    model_xw4d.build_transport_matrix(list(data["features"]))
+    # if dataset != 'DD':
+    #     model_xw4d.build_transport_matrix(list(data["features"]))
     # old_loss_d = -1
     for e in tqdm(range(num_of_iter), unit= "iter" ):
         # print( "epochs : " + str(e) + "/" + str(num_of_iter))
@@ -129,19 +130,21 @@ def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_trai
             acc_loss_d += loss_d/len(batch_indice)
         # if tf.abs( (old_loss_d - loss_d ) / loss_d ) < 1e-6 :
         #     break
+        # break
         # old_loss_d = loss_d
         if decay_learning_rate :
             optimizer.learning_rate = learning_rate * np.math.pow(1.1, - 50.*(e / num_of_iter))
         print("epochs : " + str(e) + "/" + str(num_of_iter))
         # print("loss_d : ", str(loss_d) )
         print("avg_loss_d : ", str(acc_loss_d) )
+
         if e + 1  in save_iter  and e != num_of_iter - 1 :
-            D, t = model_xw4d.distance_fastv2(list(data["features"]),list(data["structures"]))
+            D = model_xw4d.distance_quad_np(list(data["features"]),list(data["structures"]))
             parameters_copy = parameters.copy()
             parameters_copy["num_of_iter"] = e + 1
-            save_distance(distance = D.numpy(), parameters = parameters_copy , title_extension= "_iter"+str(e + 1))   
-    D = model_xw4d.distance_fastv2(list(data["features"]),list(data["structures"]))
-    save_distance(distance = D.numpy(), parameters = parameters, title_extension= "_iter"+str(e + 1))
+            save_distance(distance = D, parameters = parameters_copy , title_extension= "_iter"+str(e + 1)) 
+    D = model_xw4d.distance_quad_np(list(data["features"]),list(data["structures"]))
+    save_distance(distance = D, parameters = parameters, title_extension= "_iter"+str(e + 1))
     return D
 
 # from https://github.com/BorgwardtLab/WWL
@@ -151,7 +154,7 @@ def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False,
     Generate the Wasserstein distance matrix for the graphs embedded 
     in label_sequences
     '''
-    # label_sequences = label_sequences[:400]
+    # label_sequences = label_sequences[:40]
     # Get the iteration number from the embedding file
     n = len(label_sequences)
     emb_size = label_sequences[0].shape[1]
@@ -160,6 +163,7 @@ def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False,
     # hs = range(0, h + 1)
     hs = range(h, h + 1)
     wasserstein_distances = []
+    utils.tic()
     for h in hs:
         M = np.zeros((n,n))
         # Iterate over pairs of graphs
@@ -181,25 +185,23 @@ def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False,
                     M[graph_index_1, graph_index_2 + graph_index_1] = \
                         ot.emd2([], [], costs) 
         M = (M + M.T)
+        utils.toc()
         wasserstein_distances.append(M)
         print(f'Iteration {h}: done.')
-    # end = time.time()
-    # print("time :"+str(end - start))
     save_distance(wasserstein_distances[-1], parameters)
-    print("top2")
     return wasserstein_distances
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(process_data.available_tasks()))
-    parser.add_argument('--dataset', default='NCI1', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
-    parser.add_argument('--feature', default = 'node_labels', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
+    parser.add_argument('--dataset', default='PROTEINS', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
+    parser.add_argument('--feature', default = 'degree', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
     parser.add_argument('--loss', default = "NCCML", help='Metric learning loss')
     ###    
     parser.add_argument('--gcn', type = str, default= "sgcn" , help='Type of GCN. [SGCN].')
     parser.add_argument('--num_of_layer', type = int, default= 2, help='Number of layer for GCN. [-1, integers > 0]. -1 : exponentiate. 0 : GCN = identity.')
     parser.add_argument('--hidden_layer_dim', type = int, default = 0, help='Size of hidden layer of the GCN if applicable. [integer > 0]. O : output dimension = input dimension.')
-    parser.add_argument('--final_layer_dim', type = int, default = 0, help='Size of final layer of the GCN. [-2, -1, 0, integer > 0]. O : output dimension = input dimension. -1 : output dimension = input dimension//2. -2 : output dimension = input dimension//2.')
+    parser.add_argument('--final_layer_dim', type = int, default = 5, help='Size of final layer of the GCN. [-2, -1, 0, integer > 0]. O : output dimension = input dimension. -1 : output dimension = input dimension//2. -2 : output dimension = input dimension//2.')
     parser.add_argument('--nonlinearity', type = str, default= "none", help='Nonlinearity. [relu, tanh, none]')
     ###
     parser.add_argument('--learning_rate', type = float, default = 0.999e-2, help = 'Learning rate. [positive floats]' )
@@ -254,19 +256,36 @@ if __name__ == '__main__':
     parameters["write_latent_space"] = [True if args.write_latent_space or args.grid_search  else False ] 
     parameters["write_weights"] =  [args.write_weights] 
     parameters["evaluation"] = [args.evaluation] 
+    # PAPER EXPERIMENTS
     if args.grid_search :
-        parameters["num_of_layer"] = [0,1,2,3,4]
-        if args.task == "pw4d" or args.task == "sw4d":
-            parameters["features"] = ["node_labels"] #["features","degree","node_labels","graph_fuse"]
-            parameters["loss"] =  ["NCCML"] #"NCA", "LMNN-3", Our vectorize implementation
-            parameters["final_layer_dim"] = [5]
-            parameters["decay_learning_rate"] = [False]
-            parameters["partial_train"] = [0.9]#[0.9,0.2]
+        parameters["num_of_layer"] = [1,2,3,4]
+        parameters["features"] = ["degree"] #["features","degree","node_labels","graph_fuse"]
+        parameters["final_layer_dim"] = [5]
+        parameters["decay_learning_rate"] = [False]
+        parameters["partial_train"] = [0.9]#[0.9,0.2]
+        parameters["nonlinearity"] = ["relu"]
+        parameters["num_of_iter"] = [10]
+        parameters["sampling_nb"] = [50] 
+        parameters["batch_size"] = [8]
+        if args.task == "pw4d":
+            parameters["loss"] =  ["NCCML", "NCA"]
             parameters["sampling_type"] = ["basis"]#["ortho",'basis']
-            parameters["nonlinearity"] = ["relu"]
-            parameters["num_of_iter"] = [1]
-            parameters["sampling_nb"] = [50] 
+        if args.task == "sw4d":
+            parameters["loss"] =  ["NCCML"] #"NCA", "LMNN-3"
+            parameters["sampling_type"] = ["uniform"]#["ortho",'basis'] 
+        if args.dataset == "ENZYMES":
             parameters["batch_size"] = [8] 
+            parameters["learning_rate"] = [0.999e-3]
+            parameters["num_of_iter"] = [10, 20] 
+        if args.dataset == "PROTEINS":
+            parameters["features"] = ["fuse","node_labels"]
+            parameters["batch_size"] = [8] 
+            parameters["learning_rate"] = [0.999e-4]
+            parameters["num_of_iter"] = [10, 20] 
+        if args.dataset == "COX2" or args.dataset == "BZR":
+            parameters["features"] = ["attributes"]        
+        if args.dataset == "NCI1" or args.dataset == "ENZYMES":
+            parameters["features"] = ["attributes"]       
     if args.task in process_data.available_tasks() and args.dataset in process_data.available_datasets():
         with tf.device(device):
             list_of_parameters = list(ParameterGrid(parameters))
@@ -283,7 +302,6 @@ if __name__ == '__main__':
                             data = process_data.load_dataset(args.dataset, parameters_["features"])
                             distance = compute_dataset_distance(parameters_, data, "pw4d", parameters_["partial_train"], run_id)
                         if args.task == "wwl":
-                            # start = time.time() 
                             data = process_data.load_dataset(args.dataset, parameters_["features"], h = parameters_["num_of_layer"])
                             isdiscrete = True if parameters_["features"] == "node_labels" or parameters_["features"] == "degree" else False
                             distance = compute_wasserstein_distance(data["features"],parameters_, h = parameters_["num_of_layer"], sinkhorn=False, discrete= isdiscrete, sinkhorn_lambda=1e-2)[-1]

@@ -14,10 +14,7 @@ from scipy.spatial.distance import cdist
 from sklearn.base import TransformerMixin
 from collections import defaultdict
 
-# ROOTDIR = "/scratch/ykaloga/resultsnodeslab/"
-# ROOTDIR = "/scratch/ykaloga/resultsdiscrete/"
-ROOTDIR = "/scratch/ykaloga/resultscontinuous/"
-# ROOTDIR = "/scratch/ykaloga/"
+ROOTDIR = "results"
 
 def available_tasks():
     """ Return list of available tasks. """
@@ -25,7 +22,7 @@ def available_tasks():
 
 def available_datasets():
     """ Return list of available datasets. """
-    return ["Alkane","ENZYMES","NCI109","NCI1","PTC_MR","PTC_FR","MUTAG","DD","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform"]
+    return ["Alkane","ENZYMES","NCI109","NCI1","PTC_MR","PTC_FR","MUTAG","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform","IMDB-MULTI", "IMDB-BINARY"]
 
 def available_features():
     """ Return list of available datasets. """
@@ -33,12 +30,14 @@ def available_features():
 
 def available_features_per_datasets(dataset):
     """ Return list of available feature for a given dataset. """
-    if dataset in ["NCI109","NCI1","PTC_MR","PTC_FR","MUTAG","DD"]:
+    if dataset in ["NCI109","NCI1","PTC_MR","PTC_FR","MUTAG"]:
         return ["node_labels", "degree"]
     if dataset in ["ENZYMES","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform"]:
         return ["attributes", "node_labels", "fuse", "degree"]
     if dataset in ["Alkane"]:
         return ["attributes", "degree"]
+    if dataset in ["IMDB-MULTI", "IMDB-BINARY"]:
+        return ["degree"]
        
 def load_dataset(dataset, feature = "attributes", h = 0):
     """ Dataset : - Alkane
@@ -59,7 +58,7 @@ def load_dataset(dataset, feature = "attributes", h = 0):
     if feature not in available_features_per_datasets(dataset):
         print("No "+feature+" in "+dataset)
         sys.exit()
-    if dataset in ["NCI109","NCI1","PTC_MR","PTC_FR","MUTAG","DD","ENZYMES","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform"]:
+    if dataset in ["NCI109","NCI1","PTC_MR","PTC_FR","MUTAG","DD","ENZYMES","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform","IMDB-MULTI", "IMDB-BINARY"]:
         data = load_drtmnd_dataset(dataset, use_attributes_if_exist = True) 
         feature_key = "node_labels" if feature == "node_labels" else "graph_features" if feature == "attributes" else "graph_fuse" if feature == "fuse" else "graph_degree"
     elif dataset in ["Alkane"]:
@@ -78,7 +77,7 @@ def load_dataset(dataset, feature = "attributes", h = 0):
 
 def get_labels(dataset_name):
     """ Return the label of specified dataset (When possible). """
-    if dataset_name in ["NCI109","NCI1","PTC_MR","MUTAG","DD"]:
+    if dataset_name in ["NCI109","NCI1","PTC_MR","MUTAG","IMDB-BINARY","IMDB-MULTI"]:
         data = load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True) 
     elif dataset_name in ["PROTEINS_full","PROTEINS","ENZYMES","BZR","COX2","Cuneiform"]:
         data = load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True) 
@@ -290,7 +289,7 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
             graph_node_labels = [ np.eye(max_tamp)[f-1] for f in Tamp]
         data["node_labels"] = np.array(graph_node_labels)
         # print("t")
-    if dataset_name == "ENZYMES" or dataset_name == "PROTEINS_full" or dataset_name == "PROTEINS" or dataset_name == "COX2" or dataset_name == "BZR" or  dataset_name == "Cuneiform"    :
+    if dataset_name == "ENZYMES" or dataset_name == "PROTEINS_full" or dataset_name == "PROTEINS" or dataset_name == "COX2" or dataset_name == "BZR" :#or  dataset_name == "Cuneiform"    :
         aggregate = [ np.concatenate([ga,gf],axis=1) for ga, gf in zip(graph_attributes,graph_node_labels)]
         data["graph_fuse"] = np.array(aggregate)
                 
@@ -315,6 +314,7 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
     # aggregate = [ np.concatenate([ga,gf],axis=1) for ga, gf in zip(data["graph_degree"],graph_node_labels)]
     # data["graph_fuse"] = np.array(aggregate)
     return data
+
 # Next function come from https://github.com/BorgwardtLab/WWL
 # Implement features extraction of WWL papers 
 def create_labels_seq_cont(node_features, adj_mat, h):

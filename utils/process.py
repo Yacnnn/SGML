@@ -27,6 +27,46 @@ def uniform_transport_matrix(p_nbins, q_nbins):
             w_j = 1/q_nbins
     return utm
 
+def uniform_pw(p_nbins, q_nbins, pfeatures, qfeatures):
+    """ Compute PSW for uniform distribution assuming that pfeatures and qfeatues rows have been already sorted"""
+    c = 0
+    # utm = np.zeros((p_nbins,q_nbins)).astype(np.float32)
+    i = 0
+    j = 0
+    w_i = 1/p_nbins
+    w_j = 1/q_nbins
+    while True:
+        if w_i < w_j :
+            # utm[i,j] = w_i
+            c = c + w_i*np.linalg.norm(pfeatures[i,:] - qfeatures[j,:])**2
+            i += 1
+            if i == p_nbins:
+                break
+            w_j -= w_i
+            w_i = 1/p_nbins
+        else  :
+            # utm[i,j] = w_j
+            c = c + w_j*np.linalg.norm(pfeatures[i,:] - qfeatures[j,:])**2
+            j +=1 
+            if j == q_nbins:
+                break
+            w_i -= w_j
+            w_j = 1/q_nbins
+    return c #utm
+
+def uniform_transport_matrixv2(p_nbins, q_nbins, order_p, order_q):
+    """ Return the transport matrix between two (sorted) real uniform distribution with p and q bins.
+    """
+    mn = p_nbins
+    mx = q_nbins
+    tampon = np.zeros((mn,mx*mn)).astype(np.float32)
+    tampon2 = np.zeros((mn,mx)).astype(np.float32)
+    for q in range(mn):
+        tampon[q,(mx)*q:(mx)*q+mx] = 1/mx
+    for p in range(mx):
+        tampon2[:,p] = np.sum(tampon[:,(mn)*p:(mn)*p+mn],1)
+    return tampon2
+
 def list_of_primes(n):
     """ Return the first n prime number.
     """
@@ -92,8 +132,7 @@ def dpp_sphere_smpl(n, p):
     samples = (np.transpose(dpp.sample()) + 1.0) / 2.0
     return hypcube2hypsphere(samples)
 
-    
-    
+
 
 
 
