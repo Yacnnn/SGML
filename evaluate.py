@@ -88,10 +88,9 @@ def custom_grid_search_cv(model, param_grid, precomputed_kernels, y, cv=5):
     return ret_model.fit(precomputed_kernels[params[best_idx]['K_idx']], y), params[best_idx], fin_results[best_idx]
 
 def evaluate_kernel_cv(embeddings_list,labels,list_of_parameters, list_of_run_path, search_path, cross_valid = 10 , cross_valid_max = 1):
-    list_of_parameters = [a for a,e in zip(list_of_parameters,embeddings_list) if not np.isnan(np.sum(e))]
-    list_of_run_path = [a for a,e in zip(list_of_run_path,embeddings_list) if not np.isnan(np.sum(e))]
-    embeddings_list = [e for e in embeddings_list if not np.isnan(np.sum(e))]
-
+    # list_of_parameters = [a for a,e in zip(list_of_parameters,embeddings_list) if not np.isnan(np.sum(e))]
+    # list_of_run_path = [a for a,e in zip(list_of_run_path,embeddings_list) if not np.isnan(np.sum(e))]
+    # embeddings_list = [e for e in embeddings_list if not np.isnan(np.sum(e))]
 
     cross_valid = cross_valid
     cross_valid_max = cross_valid_max
@@ -150,9 +149,9 @@ def evaluate_kernel_cv(embeddings_list,labels,list_of_parameters, list_of_run_pa
     return np.mean(svm_valid_acc_results,axis = (0,1)), np.mean(svm_test_acc_results,axis = (0,1))
 
 def evaluate_knn_cv(embeddings_list,labels,list_of_parameters, list_of_run_path, search_path, cross_valid = 10 , cross_valid_max = 1):
-    list_of_parameters = [a for a,e in zip(list_of_parameters,embeddings_list) if not np.isnan(np.sum(e))]
-    list_of_run_path = [a for a,e in zip(list_of_run_path,embeddings_list) if not np.isnan(np.sum(e))]
-    embeddings_list = [e for e in embeddings_list if not np.isnan(np.sum(e))]
+    # list_of_parameters = [a for a,e in zip(list_of_parameters,embeddings_list) if not np.isnan(np.sum(e))]
+    # list_of_run_path = [a for a,e in zip(list_of_run_path,embeddings_list) if not np.isnan(np.sum(e))]
+    # embeddings_list = [e for e in embeddings_list if not np.isnan(np.sum(e))]
 
     cross_valid = cross_valid
     cross_valid_max = cross_valid_max
@@ -211,13 +210,13 @@ def evaluate_knn_cv(embeddings_list,labels,list_of_parameters, list_of_run_path,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
-    parser.add_argument('--dataset', default='PROTEINS_full', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
+    parser.add_argument('--dataset', default='MUTAG', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
     parser.add_argument('--date', default='', help='[MONTH]_[DAY]_[YEAR]_[HOUR]h[MINUTES]m[SECONDES]s')
     args = parser.parse_args()
     if args.task in available_tasks():
         search_path_tab = ['./results/'+args.dataset+"_"+args.task+'/'+args.date]
         if args.date == '':
-            search_path_tab = glob.glob(search_path_tab[0]+'/*')[1:2]#[k for k in glob.glob(search_path_tab[0]+'/*')[:-1] if '2022_20h30m33s' not in k]
+            search_path_tab = glob.glob(search_path_tab[0]+'/*')
         for search_path in search_path_tab:
             if os.path.isdir(search_path):
                 list_of_parameters = [] 

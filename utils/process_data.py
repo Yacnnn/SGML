@@ -14,7 +14,7 @@ from scipy.spatial.distance import cdist
 from sklearn.base import TransformerMixin
 from collections import defaultdict
 
-ROOTDIR = "results"
+ROOTDIR = ""
 
 def available_tasks():
     """ Return list of available tasks. """

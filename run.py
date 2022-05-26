@@ -194,7 +194,7 @@ def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(process_data.available_tasks()))
-    parser.add_argument('--dataset', default='PROTEINS', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
+    parser.add_argument('--dataset', default='MUTAG', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
     parser.add_argument('--feature', default = 'degree', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
     parser.add_argument('--loss', default = "NCCML", help='Metric learning loss')
     ###    
@@ -278,14 +278,13 @@ if __name__ == '__main__':
             parameters["learning_rate"] = [0.999e-3]
             parameters["num_of_iter"] = [10, 20] 
         if args.dataset == "PROTEINS":
-            parameters["features"] = ["fuse","node_labels"]
             parameters["batch_size"] = [8] 
             parameters["learning_rate"] = [0.999e-4]
             parameters["num_of_iter"] = [10, 20] 
         if args.dataset == "COX2" or args.dataset == "BZR":
             parameters["features"] = ["attributes"]        
         if args.dataset == "NCI1" or args.dataset == "ENZYMES":
-            parameters["features"] = ["attributes"]       
+            parameters["features"] = ["node_labels"]       
     if args.task in process_data.available_tasks() and args.dataset in process_data.available_datasets():
         with tf.device(device):
             list_of_parameters = list(ParameterGrid(parameters))
