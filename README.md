@@ -78,11 +78,14 @@ All dataset in the paper can be found on :  https://ls11-www.cs.tu-dortmund.de/s
     python3 runtimes_evalutation.py 
 
 It will save a "runtimes.mat" file 6 X 18 on folder "./" containing running times (in seconds) for different OT distance
-column corrsponds to distribution size: (some size are not evaluated for all methods - which corresponds to a 0 -)
+
+column corrsponds to distribution size: (some size are not evaluated for all methods - which corresponds to value 0 in "runtimes.mat"-)
 [      10,       22,       50,      114,      258,      581,
  1311,     2955,     6660,    15013,    33838,    76269,
 171907,   387467,   873326,  1968419,  4436687, 10000000]
-rows corrsponds to method:
+
+rows corresponds to method:
+
 Wassestein 
 Wassesertein entropic (100 reg parameters)
 Sliced Wassesertein
