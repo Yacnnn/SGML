@@ -1,6 +1,6 @@
 import numpy as np
 import ot
-from utils.process import uniform_transport_matrix, cost_on_stream
+from utils.process import uniform_transport_matrix, uniform_pw
 from utils import utils
 import time 
 import scipy.io as sio
@@ -48,7 +48,7 @@ def rpswv(distrib1, distrib2):
     d = distrib1.shape[1]
     argsort_distrib1 = np.argsort(distrib1,axis = 0)
     argsort_distrib2 = np.argsort(distrib2,axis = 0)
-    c = [cost_on_stream(len(distrib1),len(distrib2),distrib1[argsort_distrib1[:, t],:],distrib2[argsort_distrib2[:, t],:]) for t in range(d)]
+    c = [uniform_pw(len(distrib1),len(distrib2),distrib1[argsort_distrib1[:, t],:],distrib2[argsort_distrib2[:, t],:]) for t in range(d)]
     return np.sum(c)/d
 
 if __name__ == '__main__':
