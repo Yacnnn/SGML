@@ -37,6 +37,7 @@ The purpose of this repository is to make reproductible all experiences on this 
 
 ### Dataset
 All dataset in the paper can be found on :  https://ls11-www.cs.tu-dortmund.de/staff/morris/graphkerneldatasets
+They must be placed in the "./data" folder.
 
 ### Command
 
