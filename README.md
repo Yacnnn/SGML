@@ -85,7 +85,7 @@ Computed distances are written in results folder.
 
 Results files can be found on results folder.
 
-The grid search parameters can be set between line 260 and 288 of run.py file. The parameters of the search grid have priority over others (grid_search is set to True).
+The grid search parameters can be set between line 260 and 288 of run.py file. The parameters of the search grid have priority over others (when grid_search is set to True).
 
 Note: For PROTEINS you must specify wheter you wants to use concatenation of node labels and continuous features or only node labels. i.e:
 
