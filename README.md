@@ -17,7 +17,7 @@ The purpose of this repository is to make reproductible all experiences on "A si
 
 ALL code related to Wasserstein WL comes from https://github.com/BorgwardtLab/WWL
 
-ALL code related to Fused Gromov-Waserstein https://github.com/tvayer/FGW/blob/master/README.md            
+ALL code related to Fused Gromov-Waserstein comes from https://github.com/tvayer/FGW/blob/master/README.md            
                     
 
 ### Abstract 
