@@ -67,9 +67,15 @@ def save_distance(distance, parameters, title_extension = ""):
 
 def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_train = 0.9, addseed = 0):
     """ Train the model given multiviews data and specified parameters and return it. """  
-    cv = StratifiedKFold(n_splits = 10 , shuffle=True) 
-    np.random.seed(42 + addseed)
-    train_index, test_index = next(cv.split(data["features"], data["labels"]))
+    np.random.seed(42 + addseed)    
+    try:
+        cv = StratifiedKFold(n_splits = 10 , shuffle=True) 
+        train_index, test_index = next(cv.split(data["features"], data["labels"]))
+    except:
+        print("Cannot use StratifiedKFold. n_splits=10 cannot be greater than the number of members in each class.")
+        print("Kfold is used instead of StratifiedKFold.")
+        cv = KFold(n_splits = 10 , shuffle=True) 
+        train_index, test_index = next(cv.split(data["features"], data["labels"]))
     if partial_train < 0.9 :
         keep_number = int(len(data["features"])*partial_train)
         s = np.copy(train_index)
