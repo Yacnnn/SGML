@@ -17,7 +17,6 @@ from sklearn.base import TransformerMixin
 from collections import defaultdict
 
 ROOTDIR = ""
-ROOTDIR = "/scratch/ykaloga/last_results/"
 def available_tasks():
     """ Return list of available tasks. """
     return ["sw4d","pw4d","wwl","swwl","fgw"]
