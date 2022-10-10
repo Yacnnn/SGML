@@ -1,5 +1,6 @@
 import os 
 import argparse
+from tkinter import N
 import ot
 import numpy as np
 import scipy.io as sio
@@ -7,15 +8,17 @@ import tensorflow as tf
 import time
 from datetime import datetime
 from tqdm import tqdm
-
+import networkx as nx 
 from utils import process
 from utils import process_data
 from utils import utils
-
+from lib_fgw.graph import Graph
 from sklearn.model_selection import ParameterGrid, StratifiedKFold, KFold
 
 from models.sw4d import Sw4d
 from models.pw4d import Pw4d
+
+from lib_fgw.ot_distances import Fused_Gromov_Wasserstein_distance
 
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 NOW = datetime.utcnow().strftime('%B_%d_%Y_%Hh%Mm%Ss')
@@ -67,7 +70,11 @@ def save_distance(distance, parameters, title_extension = ""):
 
 def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_train = 0.9, addseed = 0):
     """ Train the model given multiviews data and specified parameters and return it. """  
-    cv = StratifiedKFold(n_splits = 10 , shuffle=True) 
+    try:
+        cv = StratifiedKFold(n_splits = 10 , shuffle=True) 
+    except:
+        cv = KFold(n_splits = 10 , shuffle=True) 
+        pass
     np.random.seed(42 + addseed)
     train_index, test_index = next(cv.split(data["features"], data["labels"]))
     if partial_train < 0.9 :
@@ -124,6 +131,7 @@ def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_trai
         for feat, struct, lab, s in zip( tqdm( batch_features, unit = "batch", disable = True ), batch_structures, batch_labels, batch_indice ):
             with tf.GradientTape() as tape:
                 loss_d, loss_s =  model_xw4d(list(feat),list(struct),list(lab),list(s))
+                # print(loss_d)
             gradients = tape.gradient(loss_d, model_xw4d.trainable_variables)
             gradient_variables = zip( gradients, model_xw4d.trainable_variables)
             optimizer.apply_gradients(gradient_variables)
@@ -190,6 +198,33 @@ def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False,
         print(f'Iteration {h}: done.')
     save_distance(wasserstein_distances[-1], parameters)
     return wasserstein_distances
+
+def compute_fgwasserstein_distance(data, parameters):
+    '''
+    Generate the Wasserstein distance matrix for the graphs embedded 
+    in label_sequences
+    '''
+    graph_list = []
+    for a, f in zip(data['structures'],data['features']):
+        G = Graph()
+        # for num in range(len(f)):
+        #     G.add_node(num)
+        G.add_attibutes({ num : f[num,:] for num in range(len(f))})
+        for i in range(len(a)) : 
+            for j in range(i+1,len(a)):
+                if a[i,j] > 0: 
+                    G.add_edge((i,j))
+        # nx.set_node_attributes(G, { num : f[num,:] for num in range(len(f))}, name="attributes")
+        graph_list.append(G)
+    graph_list = graph_list
+    n = len(graph_list)
+    D = np.zeros((n,n))
+    for i in tqdm(range(n)): 
+        for j in range(i+1,n):
+            D[i,j] = Fused_Gromov_Wasserstein_distance(alpha=parameters['alpha'],features_metric='sqeuclidean',method='shortest_path').graph_d(graph_list[i],graph_list[j])
+        D = (D + D.T)
+    save_distance(D, parameters)
+    return D
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -258,33 +293,44 @@ if __name__ == '__main__':
     parameters["evaluation"] = [args.evaluation] 
     # PAPER EXPERIMENTS
     if args.grid_search :
-        parameters["num_of_layer"] = [1,2,3,4]
-        parameters["features"] = ["degree"] #["features","degree","node_labels","graph_fuse"]
-        parameters["final_layer_dim"] = [5]
-        parameters["decay_learning_rate"] = [False]
-        parameters["partial_train"] = [0.9]#[0.9,0.2]
-        parameters["nonlinearity"] = ["relu"]
-        parameters["num_of_iter"] = [10]
-        parameters["sampling_nb"] = [50] 
-        parameters["batch_size"] = [8]
-        if args.task == "pw4d":
-            parameters["loss"] =  ["NCCML", "NCA"]
-            parameters["sampling_type"] = ["basis"]#["ortho",'basis']
-        if args.task == "sw4d":
-            parameters["loss"] =  ["NCCML"] #"NCA", "LMNN-3"
-            parameters["sampling_type"] = ["uniform"]#["ortho",'basis'] 
-        if args.dataset == "ENZYMES":
-            parameters["batch_size"] = [8] 
-            parameters["learning_rate"] = [0.999e-3]
-            parameters["num_of_iter"] = [10, 20] 
-        if args.dataset == "PROTEINS":
-            parameters["batch_size"] = [8] 
-            parameters["learning_rate"] = [0.999e-4]
-            parameters["num_of_iter"] = [10, 20] 
-        if args.dataset == "COX2" or args.dataset == "BZR":
-            parameters["features"] = ["attributes"]        
-        if args.dataset == "NCI1" or args.dataset == "ENZYMES":
-            parameters["features"] = ["node_labels"]       
+        if args.task == "fgw":
+            parameters["alpha"] = [0.25, 0.50, 0.75]    
+        elif args.task == "wwl":
+            parameters["num_of_layer"] = [1,2,3,4]
+        else:
+            parameters["num_of_layer"] = [1,2,3,4]
+            parameters["features"] = ["degree"] #["features","degree","node_labels","graph_fuse"]
+            parameters["final_layer_dim"] = [5]
+            parameters["decay_learning_rate"] = [False]
+            parameters["partial_train"] = [0.9]#[0.9,0.2]
+            parameters["nonlinearity"] = ["relu"]
+            parameters["num_of_iter"] = [10]
+            parameters["sampling_nb"] = [50] 
+            parameters["batch_size"] = [8]
+            if args.task == "pw4d":
+                parameters["loss"] =  ["NCCML", "NCA"]
+                parameters["sampling_type"] = ["basis"]#["ortho",'basis']
+            if args.task == "sw4d":
+                parameters["loss"] =  ["NCCML"] #"NCA", "LMNN-3"
+                parameters["sampling_type"] = ["uniform"]#["ortho",'basis'] 
+            if args.dataset == "ENZYMES":
+                parameters["batch_size"] = [8] 
+                parameters["learning_rate"] = [0.999e-3]
+                parameters["num_of_iter"] = [10, 20] 
+                parameters["features"] = ["node_labels","fuse"] 
+            if args.dataset == "PROTEINS" or args.dataset == "PROTEINS_full":
+                parameters["batch_size"] = [8] 
+                parameters["learning_rate"] = [0.999e-4]
+                parameters["num_of_iter"] = [10, 20] 
+                parameters["gcn"] = ["gat"] #,'fuse'
+                parameters["features"] = ["fuse"] #,'fuse'
+            if args.dataset == "COX2" or args.dataset == "BZR":
+                parameters["features"] = ["attributes"]        
+            if args.dataset == "NCI1" or args.dataset == "ENZYMES":
+                parameters["features"] = ["node_labels"]        
+            if args.dataset == "Cuneiform":
+                parameters["features"] = ['fuse']    
+                parameters["batch_size"] = [64]      
     if args.task in process_data.available_tasks() and args.dataset in process_data.available_datasets():
         with tf.device(device):
             list_of_parameters = list(ParameterGrid(parameters))
@@ -304,6 +350,9 @@ if __name__ == '__main__':
                             data = process_data.load_dataset(args.dataset, parameters_["features"], h = parameters_["num_of_layer"])
                             isdiscrete = True if parameters_["features"] == "node_labels" or parameters_["features"] == "degree" else False
                             distance = compute_wasserstein_distance(data["features"],parameters_, h = parameters_["num_of_layer"], sinkhorn=False, discrete= isdiscrete, sinkhorn_lambda=1e-2)[-1]
+                        if args.task == "fgw":
+                            data = process_data.load_dataset(args.dataset, parameters_["features"], h = parameters_["num_of_layer"])
+                            distance = compute_fgwasserstein_distance(data,parameters_)
                         #------------------
                         if first_run :
                             first_run = False

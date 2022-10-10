@@ -1,4 +1,3 @@
-
 import argparse
 import numpy as np
 import pandas as pd
@@ -16,7 +15,7 @@ from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.metrics import normalized_mutual_info_score
 from scipy.spatial.distance import cosine
 from sklearn.cluster import KMeans, SpectralClustering
-from sklearn.model_selection import ParameterGrid, StratifiedKFold
+from sklearn.model_selection import ParameterGrid, StratifiedKFold, KFold
 from sklearn.metrics import make_scorer, accuracy_score
 from sklearn.model_selection._validation import _fit_and_score
 from sklearn.metrics import accuracy_score
@@ -31,7 +30,7 @@ import matplotlib.pyplot as plt
 
 def available_tasks():
     """ Return list of available tasks. """
-    return ["sw4d",'wwl',"pw4d"]
+    return ["sw4d",'wwl',"pw4d",'fgw']
 
 def clean_parameters(parameters):
     new_parameters = {}
@@ -47,9 +46,11 @@ def rotate(list_, n):
 def get_parameters_folder_path(search_path):
     return glob.glob(search_path+'/*success')
 
-def get_run_folder_path(parameter_path):
+def get_run_folder_path(parameter_path, task, num_of_run):
     run_folder_path = glob.glob(parameter_path+'/*run*')
     parameter_file_path = glob.glob(parameter_path+'/*dict*')[0]
+    if len(run_folder_path) == 1 and (task == "fgw" or task == "wwl"): #for fgw and wwl
+        run_folder_path = run_folder_path*num_of_run
     return run_folder_path, parameter_file_path
 
 def get_embedding_path(run_folder_path):
@@ -60,11 +61,14 @@ def embeddings_path2embeddings(embeddings_path):
     # return [[sio.loadmat(path)['distance'] for path in ep] for ep in embeddings_path]
     return [sio.loadmat(run_path)['distance'] for run_path in embeddings_path]
 
-def custom_grid_search_cv(model, param_grid, precomputed_kernels, y, cv=5):
+def custom_grid_search_cv(model, param_grid, precomputed_kernels, y, cv_num=5):
     '''
     Custom grid search based on the sklearn grid search for an array of precomputed kernels
     '''
-    cv = StratifiedKFold(n_splits=cv, shuffle=False)
+    if cv_num  >= len(set(y)) :
+        cv = StratifiedKFold(n_splits=cv_num , shuffle=False)
+    else:
+        cv = KFold(n_splits=cv_num , shuffle=False)
     results = []
     for train_index, test_index in cv.split(precomputed_kernels[0], y):
         split_results = []
@@ -88,9 +92,9 @@ def custom_grid_search_cv(model, param_grid, precomputed_kernels, y, cv=5):
     return ret_model.fit(precomputed_kernels[params[best_idx]['K_idx']], y), params[best_idx], fin_results[best_idx]
 
 def evaluate_kernel_cv(embeddings_list,labels,list_of_parameters, list_of_run_path, search_path, cross_valid = 10 , cross_valid_max = 1):
-    # list_of_parameters = [a for a,e in zip(list_of_parameters,embeddings_list) if not np.isnan(np.sum(e))]
-    # list_of_run_path = [a for a,e in zip(list_of_run_path,embeddings_list) if not np.isnan(np.sum(e))]
-    # embeddings_list = [e for e in embeddings_list if not np.isnan(np.sum(e))]
+    list_of_parameters = [a for a,e in zip(list_of_parameters,embeddings_list) if not np.isnan(np.sum(e))]
+    list_of_run_path = [a for a,e in zip(list_of_run_path,embeddings_list) if not np.isnan(np.sum(e))]
+    embeddings_list = [e for e in embeddings_list if not np.isnan(np.sum(e))]
 
     cross_valid = cross_valid
     cross_valid_max = cross_valid_max
@@ -102,7 +106,10 @@ def evaluate_kernel_cv(embeddings_list,labels,list_of_parameters, list_of_run_pa
     labels = np.array([int(l) for l in labels])
     kernels  = [ [ [np.exp(-g*run) for g in gammas] for run in parameters] for parameters in embeddings_list]
     classif_tuned_parameters = {'C': [1]+list(np.logspace(-4,5,12))}#list(np.logspace(-3,3,8))}
-    cv = StratifiedKFold(n_splits=cross_valid , shuffle=True)
+    if cross_valid  >= len(set(labels)) :
+        cv = StratifiedKFold(n_splits=cross_valid , shuffle=True)
+    else:
+        cv = KFold(n_splits=cross_valid , shuffle=True)
     param_number_str_list = [list_of_run_path[p][0].split('parameters')[-1].split("_success")[0] for p in range(nb_parameters)]
     for p in range(nb_parameters):
         addseed = 0
@@ -149,9 +156,9 @@ def evaluate_kernel_cv(embeddings_list,labels,list_of_parameters, list_of_run_pa
     return np.mean(svm_valid_acc_results,axis = (0,1)), np.mean(svm_test_acc_results,axis = (0,1))
 
 def evaluate_knn_cv(embeddings_list,labels,list_of_parameters, list_of_run_path, search_path, cross_valid = 10 , cross_valid_max = 1):
-    # list_of_parameters = [a for a,e in zip(list_of_parameters,embeddings_list) if not np.isnan(np.sum(e))]
-    # list_of_run_path = [a for a,e in zip(list_of_run_path,embeddings_list) if not np.isnan(np.sum(e))]
-    # embeddings_list = [e for e in embeddings_list if not np.isnan(np.sum(e))]
+    list_of_parameters = [a for a,e in zip(list_of_parameters,embeddings_list) if not np.isnan(np.sum(e))]
+    list_of_run_path = [a for a,e in zip(list_of_run_path,embeddings_list) if not np.isnan(np.sum(e))]
+    embeddings_list = [e for e in embeddings_list if not np.isnan(np.sum(e))]
 
     cross_valid = cross_valid
     cross_valid_max = cross_valid_max
@@ -162,7 +169,10 @@ def evaluate_knn_cv(embeddings_list,labels,list_of_parameters, list_of_run_path,
     labels = np.array([int(l) for l in labels])
     distances  = [ [ [run] for run in parameters] for parameters in embeddings_list]
     classif_tuned_parameters = {'n_neighbors': np.array([1,2,3,5,7])}
-    cv = StratifiedKFold(n_splits=cross_valid , shuffle=True)
+    if cross_valid  >= len(set(labels)) :
+        cv = StratifiedKFold(n_splits=cross_valid , shuffle=True)
+    else:
+        cv = KFold(n_splits=cross_valid , shuffle=True)
     param_number_str_list = [list_of_run_path[p][0].split('parameters')[-1].split("_success")[0] for p in range(nb_parameters)]
     for p in range(nb_parameters):
         addseed = 0
@@ -201,9 +211,10 @@ def evaluate_knn_cv(embeddings_list,labels,list_of_parameters, list_of_run_path,
                 columns=columns0+['knn_valid_mean','knn_test_mean','knn_test_std'] ,
                 index=['parameters '+param_number_str_list[p]]).to_csv(list_of_run_path[p][r].split('run')[0]+'parameters_evaluation_knn.csv')
     #---------------
-    arr = np.concatenate([np.array([[list_of_parameters[p][c][0]] for c in columns0 ]+[[np.mean(knn_valid_acc_results[:,p,:])],[np.mean(knn_test_acc_results[:,p,:])],[np.std(knn_test_acc_results[:,p,:])]]).T for p in range(len(list_of_parameters))] , axis = 0 )
+    arr = np.concatenate([np.array([[list_of_parameters[p][c][0]] for c in columns0 ]+[[np.mean(knn_valid_acc_results[:,p,:])],[np.mean(knn_test_acc_results[:,p,:])],[np.std(knn_test_acc_results[:,p,:])],[str(list(np.round(knn_test_acc_results[:,p,:][0,:],4)))]]).T for p in range(len(list_of_parameters))] , axis = 0 )
+    # arr = np.concatenate([np.array([[list_of_parameters[p][c][0]] for c in columns0 ]+[[np.mean(knn_valid_acc_results[:,p,:])],[np.mean(knn_test_acc_results[:,p,:])],[np.std(knn_test_acc_results[:,p,:])]]).T for p in range(len(list_of_parameters))] , axis = 0 )
     pd.DataFrame(arr, 
-            columns=columns0+['knn_valid_mean','knn_test_mean','knn_test_std'] ,
+            columns=columns0+['knn_valid_mean','knn_test_mean','knn_test_std', 'acc_list_test'] ,
             index=['parameters '+param_number_str_list[p] for p in range(len(list_of_parameters))]).to_csv(search_path+'/parameters_evaluation_knn.csv')
     return np.mean(knn_valid_acc_results,axis = (0,1)), np.mean(knn_test_acc_results,axis = (0,1))
 
@@ -212,6 +223,8 @@ if __name__ == '__main__':
     parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
     parser.add_argument('--dataset', default='MUTAG', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
     parser.add_argument('--date', default='', help='[MONTH]_[DAY]_[YEAR]_[HOUR]h[MINUTES]m[SECONDES]s')
+    parser.add_argument('--num_of_run', default=10, help='This parameter is required only for FGW and WWL. It allows to average the evaluation on "num_of_run" split of the distance matrix.')
+    
     args = parser.parse_args()
     if args.task in available_tasks():
         search_path_tab = ['./results/'+args.dataset+"_"+args.task+'/'+args.date]
@@ -225,7 +238,7 @@ if __name__ == '__main__':
                 results = []
                 parameters_folder_path = get_parameters_folder_path(search_path)
                 for k in range(len(parameters_folder_path)):
-                    run_folder_path, parameter_file_path = get_run_folder_path(parameters_folder_path[k])
+                    run_folder_path, parameter_file_path = get_run_folder_path(parameters_folder_path[k], args.task, args.num_of_run)
                     embeddings_list.append( embeddings_path2embeddings(get_embedding_path(run_folder_path)) )
                     list_of_parameters.append( clean_parameters(sio.loadmat(parameter_file_path)) )
                     list_of_run_path.append(run_folder_path)
@@ -239,7 +252,7 @@ if __name__ == '__main__':
                                 del list_[key]
                         except KeyError:
                             pass
-                evaluate_kernel_cv(embeddings_list,labels,list_of_parameters, list_of_run_path, search_path)
+                # evaluate_kernel_cv(embeddings_list,labels,list_of_parameters, list_of_run_path, search_path)
                 evaluate_knn_cv(embeddings_list,labels,list_of_parameters, list_of_run_path, search_path)
             else:
                 print('Unknown date %s'%args.date)

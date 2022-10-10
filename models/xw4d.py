@@ -7,6 +7,9 @@ import tensorflow_probability as tfp
 import matplotlib.pyplot as plt
 from tqdm import tqdm 
 from layers.sgcn import Sgc
+from layers.gin import Gin
+from layers.graph_attention_network import Graph_attention_network
+from layers.krylov import Krylov
 from utils.process import uniform_transport_matrix
 from utils.process import hammersley_sphere_seq
 from utils.process import dpp_sphere_smpl
@@ -66,6 +69,18 @@ class Xw4d(tf.keras.Model):
                         nonlinearity = self.nonlinearity,
                         trainable = True,
                         l2reg = self.l2reg)
+        if "gin" in self.gcn_type:
+            self.gcn = Gin(self.num_of_layer - 1 , 3, 16, self.final_layer_dim,0 )
+        if "gat" in self.gcn_type:
+            self.gcn =   Graph_attention_network(
+                            nb_of_layer = self.num_of_layer,
+                            output_features_size = self.final_layer_dim,
+                            learning_rate = 0,
+                            dropout_rate = 0,
+                            n_attn_heads = 3,
+                            l2_reg = self.l2reg)
+        if "krylov" in self.gcn_type:
+            self.gcn =   Krylov(output_dim = self.final_layer_dim)
             
     def update_theta(self, nb_theta = None):
         if self.sampling_type == "uniform" :

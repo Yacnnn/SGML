@@ -3,9 +3,11 @@ import sys
 import copy
 import re
 import numpy as np
+import tensorflow as tf
 import igraph as ig
 import scipy.io as sio 
 import matplotlib.pyplot as plt
+import networkx as nx
 
 from tqdm import tqdm
 from typing import List
@@ -15,14 +17,14 @@ from sklearn.base import TransformerMixin
 from collections import defaultdict
 
 ROOTDIR = ""
-
+ROOTDIR = "/scratch/ykaloga/last_results/"
 def available_tasks():
     """ Return list of available tasks. """
-    return ["sw4d","pw4d","wwl","swwl"]
+    return ["sw4d","pw4d","wwl","swwl","fgw"]
 
 def available_datasets():
     """ Return list of available datasets. """
-    return ["Alkane","ENZYMES","NCI109","NCI1","PTC_MR","PTC_FR","MUTAG","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform","IMDB-MULTI", "IMDB-BINARY"]
+    return ["Alkane","ENZYMES","NCI109","NCI1","PTC_MR","PTC_FR","MUTAG","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform","IMDB-MULTI", "IMDB-BINARY","SYNTHETIC"]
 
 def available_features():
     """ Return list of available datasets. """
@@ -32,7 +34,7 @@ def available_features_per_datasets(dataset):
     """ Return list of available feature for a given dataset. """
     if dataset in ["NCI109","NCI1","PTC_MR","PTC_FR","MUTAG"]:
         return ["node_labels", "degree"]
-    if dataset in ["ENZYMES","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform"]:
+    if dataset in ["ENZYMES","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform","SYNTHETIC"]:
         return ["attributes", "node_labels", "fuse", "degree"]
     if dataset in ["Alkane"]:
         return ["attributes", "degree"]
@@ -58,7 +60,7 @@ def load_dataset(dataset, feature = "attributes", h = 0):
     if feature not in available_features_per_datasets(dataset):
         print("No "+feature+" in "+dataset)
         sys.exit()
-    if dataset in ["NCI109","NCI1","PTC_MR","PTC_FR","MUTAG","DD","ENZYMES","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform","IMDB-MULTI", "IMDB-BINARY"]:
+    if dataset in ["NCI109","NCI1","PTC_MR","PTC_FR","MUTAG","DD","ENZYMES","PROTEINS_full","PROTEINS","BZR","COX2","Cuneiform","IMDB-MULTI", "IMDB-BINARY","SYNTHETIC"]:
         data = load_drtmnd_dataset(dataset, use_attributes_if_exist = True) 
         feature_key = "node_labels" if feature == "node_labels" else "graph_features" if feature == "attributes" else "graph_fuse" if feature == "fuse" else "graph_degree"
     elif dataset in ["Alkane"]:
@@ -79,7 +81,7 @@ def get_labels(dataset_name):
     """ Return the label of specified dataset (When possible). """
     if dataset_name in ["NCI109","NCI1","PTC_MR","MUTAG","IMDB-BINARY","IMDB-MULTI"]:
         data = load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True) 
-    elif dataset_name in ["PROTEINS_full","PROTEINS","ENZYMES","BZR","COX2","Cuneiform"]:
+    elif dataset_name in ["PROTEINS_full","PROTEINS","ENZYMES","BZR","COX2","Cuneiform","SYNTHETIC"]:
         data = load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True) 
     if dataset_name in ["alkane"]:
         data = load_alkane()
@@ -289,22 +291,22 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
             graph_node_labels = [ np.eye(max_tamp)[f-1] for f in Tamp]
         data["node_labels"] = np.array(graph_node_labels)
         # print("t")
-    if dataset_name == "ENZYMES" or dataset_name == "PROTEINS_full" or dataset_name == "PROTEINS" or dataset_name == "COX2" or dataset_name == "BZR" :#or  dataset_name == "Cuneiform"    :
+    if dataset_name == "ENZYMES" or dataset_name == "PROTEINS_full" or dataset_name == "PROTEINS" or dataset_name == "COX2" or dataset_name == "BZR" or dataset_name == "SYNTHETIC" or  dataset_name == "Cuneiform"  : #or  dataset_name == "Cuneiform" or
         aggregate = [ np.concatenate([ga,gf],axis=1) for ga, gf in zip(graph_attributes,graph_node_labels)]
         data["graph_fuse"] = np.array(aggregate)
                 
     graph_adj = [(graph_adjency_matrix[i]>0).astype(int) for i in range(len(graph_adjency_matrix))]
     data["adjency_matrix"] = np.array(graph_adj) 
     index_to_delete = np.where(np.array(data["graph_size"]) < 2)
-    data["adjency_matrix"] = np.delete(data["adjency_matrix"], index_to_delete )
-    data["graph_size"] = np.delete(data["graph_size"], index_to_delete)
+    data["adjency_matrix"] = np.delete(data["adjency_matrix"], index_to_delete, axis = 0 )
+    data["graph_size"] = np.delete(data["graph_size"], index_to_delete, axis = 0)
     if exist_node_labels :
-        data["node_labels"] = np.delete(data["node_labels"], index_to_delete)
+        data["node_labels"] = np.delete(data["node_labels"], index_to_delete, axis = 0)
     if exist_node_attributes :
-        data["graph_features"] = np.delete(data["graph_features"], index_to_delete)
+        data["graph_features"] = np.delete(data["graph_features"], index_to_delete, axis = 0)
     if exist_node_attributes and exist_node_labels:
-        data["graph_fuse"] = np.delete(data["graph_fuse"], index_to_delete)
-    data["graph_labels"] = np.delete(data["graph_labels"], index_to_delete)
+        data["graph_fuse"] = np.delete(data["graph_fuse"], index_to_delete, axis = 0)
+    data["graph_labels"] = np.delete(data["graph_labels"], index_to_delete, axis = 0)
     
 
     max_degree = np.max([ np.max(np.sum(data["adjency_matrix"][i], axis = 0)) for i in range(len(data["adjency_matrix"])) ])
@@ -315,6 +317,9 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
     # data["graph_fuse"] = np.array(aggregate)
     return data
 
+
+
+############## WWL utils function
 # Next function come from https://github.com/BorgwardtLab/WWL
 # Implement features extraction of WWL papers 
 def create_labels_seq_cont(node_features, adj_mat, h):
@@ -474,3 +479,111 @@ class WeisfeilerLehman(TransformerMixin):
                 else:
                     neighbor_labels.append( X.vs[n_indices]['label'] )
             return neighbor_labels
+
+
+############## GIN utils function
+class S2VGraph(object):
+    def __init__(self, g, label, node_tags=None, node_features=None):
+        '''
+            g: a networkx graph
+            label: an integer graph label
+            node_tags: a list of integer node tags
+            node_features: a torch float tensor, one-hot representation of the tag that is used as input to neural nets
+            edge_mat: a torch long tensor, contain edge list, will be used to create torch sparse tensor
+            neighbors: list of neighbors (without self-loop)
+        '''
+        self.label = label
+        self.g = g
+        self.node_tags = node_tags
+        self.neighbors = []
+        self.node_features = 0
+        self.edge_mat = 0
+
+        self.max_neighbor = 0
+
+    def __len__(self):
+        return len(self.node_tags)
+
+def process_data_gin(dataset, degree_as_tag):
+    '''
+        dataset: name of dataset
+        test_proportion: ratio of test train split
+        seed: random seed for random splitting of dataset
+    '''
+
+    print('loading data')
+    g_list = []
+    label_dict = {}
+    feat_dict = {}
+    triggered = False
+    for i, data in enumerate(dataset["graph_adjency_matrix"]):
+        g=nx.from_numpy_matrix(data.astype(np.int))
+        # node_tags = [int(x) for x in dataset["node_labels"][i]] #Quand les labels = entier
+        node_tags = [int(x.argmax(0)) for x in dataset["node_labels"][i]]
+        if dataset["graph_labels"][i] not in label_dict:
+            mapped = len(label_dict)
+            label_dict[dataset["graph_labels"][i]] = mapped
+        g_list.append(S2VGraph(g, dataset["graph_labels"][i], node_tags))
+
+            
+    #This is the 2nd part of the load_data code.
+    #Within each graph class, he is creating the following:
+    #1. graph.neighbors <matrix> : This is similar to the matrix A, but it only contains the data of the connections.
+    #2. graph.max_neighbor <int>: This is basically the maximum number of connections that arises from a single node in the graph
+    #3. graph.label <int>        : This is to ensure that the labels do not skip numbers, i.e. labels <1,2,4,5> becomes <0,1,2,3>
+    #4. graph.edge_mat <matrix>  : This is a transpose of the edge matrix from the graph [[nodes][connected nodes]]
+            
+    #add labels and edge_mat       
+    for g in g_list:
+        g.neighbors = [[] for i in range(len(g.g))]
+        for i, j in g.g.edges():
+            g.neighbors[i].append(j)
+            g.neighbors[j].append(i)
+            
+        degree_list = []
+        for i in range(len(g.g)):
+            g.neighbors[i] = g.neighbors[i]  #This line appears to be redundant
+            degree_list.append(len(g.neighbors[i]))         
+        g.max_neighbor = max(degree_list)
+        g.label = label_dict[g.label]  #All this line does, is ensure that there is no skipping of labels. The actual numerical label is just a variable.
+    
+        #These two lines create an extension of the edges to ensure that they are bi-directional
+        edges = [list(pair) for pair in g.g.edges()]
+        edges.extend([[i, j] for j, i in edges])
+
+        deg_list = list(dict(g.g.degree(range(len(g.g)))).values())
+        
+        g.edge_mat = tf.transpose(tf.constant(edges))
+        
+        
+        
+    #This part gives the degree dictionary but not in the order of nodes within the dataset.txt file  
+    if degree_as_tag:
+        for g in g_list:
+            g.node_tags = list(dict(g.g.degree).values())
+
+    #Extracting unique tag labels   
+    tagset = set([])
+    for g in g_list:
+        tagset = tagset.union(set(g.node_tags))
+    tagset = list(tagset)
+    tag2index = {tagset[i]:i for i in range(len(tagset))}
+    
+    k = -1
+    for g in g_list:
+        k = k + 1
+        #Quand les labels = entier
+        # node_features = np.zeros((len(g.node_tags), len(tagset)))
+        # node_features[range(len(g.node_tags)), [tag2index[tag] for tag in g.node_tags]] = 1  
+        # g.node_features = tf.constant(node_features)
+        g.node_features = tf.constant(dataset["node_labels"][k])
+
+
+        
+        
+    print('# classes: %d' % len(label_dict))
+    print('# maximum node tag: %d' % len(tagset))
+
+    print("# data: %d" % len(g_list))
+
+    return np.array(g_list)#, len(label_dict)

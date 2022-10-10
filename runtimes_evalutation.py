@@ -52,7 +52,8 @@ def rpswv(distrib1, distrib2):
     return np.sum(c)/d
 
 if __name__ == '__main__':
-    n_samples_list = np.logspace(1, 7, num=18, endpoint=True, base=10.0, dtype=int, axis=0) #[100, 1000, 10000]
+    n_samples_list = np.logspace(1, 7, num=18, endpoint=True, base=10.0, dtype=int, axis=0)
+    # n_samples_list = np.logspace(1, 8, num=19, endpoint=True, base=10.0, dtype=int, axis=0)
     C = np.zeros((6,len(n_samples_list)))
     C[5,:] = n_samples_list
     for i, n_samples in enumerate(n_samples_list):
@@ -64,12 +65,13 @@ if __name__ == '__main__':
             C[0,i] = wwl(distrib1, distrib2)[-1]
         if C[1,i] == 0 and n_samples < 20000:
             C[1,i] = wwl(distrib1, distrib2, sinkhorn_lambda = 100)[-1]
-        if C[2,i] == 0:
+        if C[2,i] == 0 and n_samples < 6812925 :#and n_samples < 6812925
             C[2,i] = sw(distrib1, distrib2)[-1]
         if C[3,i] == 0 and n_samples < 20000:
             C[3,i] = rpswv_sq(distrib1, distrib2)[-1]
         if C[4,i] == 0 :
             C[4,i] = rpswv(distrib1, distrib2)[-1]
+        print(i,n_samples)
         sio.savemat('runtimes.mat',{
             'runtimes_matrix' : C
         })
