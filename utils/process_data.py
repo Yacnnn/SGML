@@ -289,7 +289,7 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
             graph_node_labels = [ np.eye(max_tamp)[f-1] for f in Tamp]
         data["node_labels"] = np.array(graph_node_labels)
         # print("t")
-    if dataset_name == "ENZYMES" or dataset_name == "PROTEINS_full" or dataset_name == "PROTEINS" or dataset_name == "COX2" or dataset_name == "BZR" :#or  dataset_name == "Cuneiform"    :
+    if dataset_name == "ENZYMES" or dataset_name == "PROTEINS_full" or dataset_name == "PROTEINS" or dataset_name == "COX2" or dataset_name == "BZR" or  dataset_name == "Cuneiform":
         aggregate = [ np.concatenate([ga,gf],axis=1) for ga, gf in zip(graph_attributes,graph_node_labels)]
         data["graph_fuse"] = np.array(aggregate)
                 
