@@ -16,6 +16,7 @@
 The purpose of this repository is to make reproductible all experiences on "A simple way to learn metrics between graphs" paper [https://arxiv.org/abs/2209.12727]. These experiments consists in building a OT distance between graphs and use it to perform classification either with k-nn algorithm or SVM with a kernel built from the distance. The OT distance is learned from a differentiable GCN : SGCN [https://arxiv.org/pdf/1902.07153.pdf] and classical Metric Learning method/loss in literature : NCA [Goldberger et al, 2004, https://www.cs.toronto.edu/~hinton/absps/nca.pdf] and NCCML (inspired from NCMML [Mensink et al, 2012, https://hal.inria.fr/hal-00722313/document]) which is introduce in the paper. 
 
 ALL code related to Wasserstein WL comes from https://github.com/BorgwardtLab/WWL
+
 ALL code related to Fused Gromov-Waserstein https://github.com/tvayer/FGW/blob/master/README.md            
                     
 
