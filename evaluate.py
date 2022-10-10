@@ -223,7 +223,7 @@ if __name__ == '__main__':
     parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
     parser.add_argument('--dataset', default='MUTAG', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
     parser.add_argument('--date', default='', help='[MONTH]_[DAY]_[YEAR]_[HOUR]h[MINUTES]m[SECONDES]s')
-    parser.add_argument('--num_of_run', default=10, help='This parameter is required only for FGW and WWL. It allows to average the evaluation on "num_of_run" split of the distance matrix.')
+    parser.add_argument('--num_of_run', default=10, help='This parameter is required only for FGW and WWL. It set the number on which the results of the method are averaged.')
     
     args = parser.parse_args()
     if args.task in available_tasks():
