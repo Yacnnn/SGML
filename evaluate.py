@@ -16,7 +16,7 @@ from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.metrics import normalized_mutual_info_score
 from scipy.spatial.distance import cosine
 from sklearn.cluster import KMeans, SpectralClustering
-from sklearn.model_selection import ParameterGrid, StratifiedKFold
+from sklearn.model_selection import ParameterGrid, StratifiedKFold, KFold
 from sklearn.metrics import make_scorer, accuracy_score
 from sklearn.model_selection._validation import _fit_and_score
 from sklearn.metrics import accuracy_score
@@ -60,11 +60,14 @@ def embeddings_path2embeddings(embeddings_path):
     # return [[sio.loadmat(path)['distance'] for path in ep] for ep in embeddings_path]
     return [sio.loadmat(run_path)['distance'] for run_path in embeddings_path]
 
-def custom_grid_search_cv(model, param_grid, precomputed_kernels, y, cv=5):
+def custom_grid_search_cv(model, param_grid, precomputed_kernels, y, cv_num=5):
     '''
     Custom grid search based on the sklearn grid search for an array of precomputed kernels
     '''
-    cv = StratifiedKFold(n_splits=cv, shuffle=False)
+     if cv_num  >= len(set(y)) :
+        cv = StratifiedKFold(n_splits=cv_num , shuffle=False)
+    else:
+        cv = KFold(n_splits=cv_num , shuffle=False)
     results = []
     for train_index, test_index in cv.split(precomputed_kernels[0], y):
         split_results = []
@@ -102,7 +105,10 @@ def evaluate_kernel_cv(embeddings_list,labels,list_of_parameters, list_of_run_pa
     labels = np.array([int(l) for l in labels])
     kernels  = [ [ [np.exp(-g*run) for g in gammas] for run in parameters] for parameters in embeddings_list]
     classif_tuned_parameters = {'C': [1]+list(np.logspace(-4,5,12))}#list(np.logspace(-3,3,8))}
-    cv = StratifiedKFold(n_splits=cross_valid , shuffle=True)
+    if cross_valid  >= len(set(labels)) :
+        cv = StratifiedKFold(n_splits=cross_valid , shuffle=True)
+    else:
+        cv = KFold(n_splits=cross_valid , shuffle=True)
     param_number_str_list = [list_of_run_path[p][0].split('parameters')[-1].split("_success")[0] for p in range(nb_parameters)]
     for p in range(nb_parameters):
         addseed = 0
@@ -162,7 +168,10 @@ def evaluate_knn_cv(embeddings_list,labels,list_of_parameters, list_of_run_path,
     labels = np.array([int(l) for l in labels])
     distances  = [ [ [run] for run in parameters] for parameters in embeddings_list]
     classif_tuned_parameters = {'n_neighbors': np.array([1,2,3,5,7])}
-    cv = StratifiedKFold(n_splits=cross_valid , shuffle=True)
+    if cross_valid  >= len(set(labels)) :
+        cv = StratifiedKFold(n_splits=cross_valid , shuffle=True)
+    else:
+        cv = KFold(n_splits=cross_valid , shuffle=True)
     param_number_str_list = [list_of_run_path[p][0].split('parameters')[-1].split("_success")[0] for p in range(nb_parameters)]
     for p in range(nb_parameters):
         addseed = 0
