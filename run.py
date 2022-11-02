@@ -332,7 +332,9 @@ if __name__ == '__main__':
                 parameters["features"] = ["node_labels"]        
             if args.dataset == "Cuneiform":
                 parameters["features"] = ['fuse']    
-                parameters["batch_size"] = [64]      
+                parameters["batch_size"] = [64]
+            if args.dataset == "MUTAG" or args.dataset == "IMDB-BINARY" or args.dataset == "IMDB-MULTI":
+            parameters["features"] = ["degree"]  
     if args.task in process_data.available_tasks() and args.dataset in process_data.available_datasets():
         with tf.device(device):
             list_of_parameters = list(ParameterGrid(parameters))
