@@ -108,8 +108,6 @@ Projected Wasserstein sequential ipplementation
 
 Computed distances are written in results folder.
 
-#Note: For ENZYMES and PREOTEINS you must specify whether you use continuous attributes (--feature attributes) or discrete attributes (--feature node_labels).
-
 ##### Evaluate command (custom kernel SVM and k-nn)
  
     python3 evaluate.py -task psw4d --dataset MUTAG
@@ -122,13 +120,15 @@ Results files can be found on results folder.
 
 The grid search parameters can be set between line 260 and 288 of run.py file. The parameters of the search grid have priority over others (when grid_search is set to True).
 
-Note: For PROTEINS you must specify wheter you wants to use concatenation of node labels and continuous features or only node labels. i.e:
+Note: For PROTEINS (and ENZEYMES) you must specify whether you wants to use concatenation of node labels and continuous features or only node labels. i.e:
 
     python3 evaluate.py -task psw4d --dataset PROTEINS --feature fuse
 
 or
 
     python3 evaluate.py -task psw4d --dataset PROTEINS --feature node_labels
+    
+ 
 
 ### Specific Example
 
