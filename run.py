@@ -328,13 +328,15 @@ if __name__ == '__main__':
                 parameters["features"] = ["fuse"] #,'fuse'
             if args.dataset == "COX2" or args.dataset == "BZR":
                 parameters["features"] = ["attributes"]        
-            if args.dataset == "NCI1" or args.dataset == "ENZYMES":
+            if args.dataset == "NCI1":
                 parameters["features"] = ["node_labels"]        
             if args.dataset == "Cuneiform":
                 parameters["features"] = ['fuse']    
                 parameters["batch_size"] = [64]
             if args.dataset == "MUTAG" or args.dataset == "IMDB-BINARY" or args.dataset == "IMDB-MULTI":
                 parameters["features"] = ["degree"]  
+            if args.dataset == "MUTAG":
+                parameters["num_of_layer"] = [1,2,3,4,5,6,7]
     if args.task in process_data.available_tasks() and args.dataset in process_data.available_datasets():
         with tf.device(device):
             list_of_parameters = list(ParameterGrid(parameters))
