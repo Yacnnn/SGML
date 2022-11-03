@@ -107,6 +107,9 @@ Projected Wasserstein sequential ipplementation
     python3 run.py -task psw4d  --grid_search True
 
 Computed distances are written in results folder.
+
+#Note: For ENZYMES and PREOTEINS you must specify whether you use continuous attributes (--feature attributes) or discrete attributes (--feature node_labels).
+
 ##### Evaluate command (custom kernel SVM and k-nn)
  
     python3 evaluate.py -task psw4d --dataset MUTAG
