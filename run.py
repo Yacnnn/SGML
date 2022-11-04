@@ -324,7 +324,6 @@ if __name__ == '__main__':
                 parameters["batch_size"] = [8] 
                 parameters["learning_rate"] = [0.999e-4]
                 parameters["num_of_iter"] = [10, 20] 
-                parameters["gcn"] = ["gat"] #,'fuse'
                 parameters["features"] = ["fuse"] #,'fuse'
             if args.dataset == "COX2" or args.dataset == "BZR":
                 parameters["features"] = ["attributes"]        
