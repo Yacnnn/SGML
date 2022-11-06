@@ -319,13 +319,13 @@ if __name__ == '__main__':
                 parameters["batch_size"] = [8] 
                 parameters["learning_rate"] = [0.999e-3]
                 parameters["num_of_iter"] = [10, 20] 
-                parameters["features"] = [args.dataset]
+                parameters["features"] = [args.feature]
                 #parameters["features"] = ["node_labels","fuse"] 
             if args.dataset == "PROTEINS" or args.dataset == "PROTEINS_full":
                 parameters["batch_size"] = [8] 
                 parameters["learning_rate"] = [0.999e-4]
                 parameters["num_of_iter"] = [10, 20] 
-                parameters["features"] = [args.dataset]
+                parameters["features"] = [args.feature]
                 #parameters["features"] = ["fuse"] #,'fuse'
             if args.dataset == "COX2" or args.dataset == "BZR":
                 parameters["features"] = ["attributes"]        
