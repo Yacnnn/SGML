@@ -301,7 +301,7 @@ if __name__ == '__main__':
             parameters["num_of_layer"] = [1,2,3,4]
         else:
             parameters["num_of_layer"] = [1,2,3,4]
-            parameters["features"] = ["degree"] #["features","degree","node_labels","graph_fuse"]
+            #parameters["features"] = ["degree"] #["features","degree","node_labels","graph_fuse"]
             parameters["final_layer_dim"] = [5]
             parameters["decay_learning_rate"] = [False]
             parameters["partial_train"] = [0.9]#[0.9,0.2]
@@ -319,11 +319,13 @@ if __name__ == '__main__':
                 parameters["batch_size"] = [8] 
                 parameters["learning_rate"] = [0.999e-3]
                 parameters["num_of_iter"] = [10, 20] 
+                parameters["features"] = [args.dataset]
                 #parameters["features"] = ["node_labels","fuse"] 
             if args.dataset == "PROTEINS" or args.dataset == "PROTEINS_full":
                 parameters["batch_size"] = [8] 
                 parameters["learning_rate"] = [0.999e-4]
                 parameters["num_of_iter"] = [10, 20] 
+                parameters["features"] = [args.dataset]
                 #parameters["features"] = ["fuse"] #,'fuse'
             if args.dataset == "COX2" or args.dataset == "BZR":
                 parameters["features"] = ["attributes"]        
