@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from models.xw4d import Xw4d
 from tqdm import tqdm 
 from utils import utils
-from utils.process import uniform_pw, uniform_transport_matrix
+from utils.process import uniform_part_pw, uniform_transport_matrix
 
 class Pw4d(Xw4d):
     def __init__(self, 
@@ -110,7 +110,7 @@ class Pw4d(Xw4d):
         for i in tqdm(range(len(output))):
             for j in range(len(output)):
                 if j > i :
-                    X = [uniform_pw(output[i].shape[0],output[j].shape[0],output[i][ output_argsort[i][:,t] ,:],output[j][ output_argsort[j][:,t] ,:]) for t in range(n)]
+                    X = [uniform_part_pw(output[i].shape[0],output[j].shape[0],output[i][ output_argsort[i][:,t] ,:],output[j][ output_argsort[j][:,t] ,:]) for t in range(n)]
                     dmsq.append(np.sum(X))
                 else :
                     dmsq.append(0)

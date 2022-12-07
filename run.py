@@ -231,8 +231,8 @@ def compute_fgwasserstein_distance(data, parameters):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(process_data.available_tasks()))
-    parser.add_argument('--dataset', default='MUTAG', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
-    parser.add_argument('--feature', default = 'degree', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
+    parser.add_argument('--dataset', default='PROTEINS', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
+    parser.add_argument('--feature', default = 'node_labels', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
     parser.add_argument('--loss', default = "NCCML", help='Metric learning loss')
     ###    
     parser.add_argument('--gcn', type = str, default= "sgcn" , help='Type of GCN. [SGCN].')
@@ -301,7 +301,7 @@ if __name__ == '__main__':
             parameters["num_of_layer"] = [1,2,3,4]
         else:
             parameters["num_of_layer"] = [1,2,3,4]
-            parameters["features"] = ["degree"] #["features","degree","node_labels","graph_fuse"]
+            # parameters["features"] = ["degree"] #["features","degree","node_labels","graph_fuse"]
             parameters["final_layer_dim"] = [5]
             parameters["decay_learning_rate"] = [False]
             parameters["partial_train"] = [0.9]#[0.9,0.2]
@@ -311,7 +311,7 @@ if __name__ == '__main__':
             parameters["batch_size"] = [8]
             if args.task == "pw4d":
                 parameters["loss"] =  ["NCCML", "NCA"]
-                parameters["sampling_type"] = ["basis"]#["ortho",'basis']
+                parameters["sampling_type"] = ["uniform"]#["ortho",'basis']
             if args.task == "sw4d":
                 parameters["loss"] =  ["NCCML"] #"NCA", "LMNN-3"
                 parameters["sampling_type"] = ["uniform"]#["ortho",'basis'] 
@@ -319,26 +319,32 @@ if __name__ == '__main__':
                 parameters["batch_size"] = [8] 
                 parameters["learning_rate"] = [0.999e-3]
                 parameters["num_of_iter"] = [10, 20] 
-                parameters["features"] = ["node_labels","fuse"] 
+                parameters["features"] = [args.feature]#["node_labels","fuse"] 
             if args.dataset == "PROTEINS" or args.dataset == "PROTEINS_full":
                 parameters["batch_size"] = [8] 
                 parameters["learning_rate"] = [0.999e-4]
                 parameters["num_of_iter"] = [10, 20] 
-                parameters["gcn"] = ["gat"] #,'fuse'
-                parameters["features"] = ["fuse"] #,'fuse'
+                # parameters["features"] = ["node_labels"]  
+                parameters["features"] = [args.feature]#["node_labels","fuse"]       
+                # parameters["gcn"] = ["gat"] #,'fuse'
+                # parameters["features"] = ["fuse"] #,'fuse'
             if args.dataset == "COX2" or args.dataset == "BZR":
                 parameters["features"] = ["attributes"]        
-            if args.dataset == "NCI1" or args.dataset == "ENZYMES":
+            if args.dataset == "NCI1":
                 parameters["features"] = ["node_labels"]        
             if args.dataset == "Cuneiform":
                 parameters["features"] = ['fuse']    
                 parameters["batch_size"] = [64]      
+            if args.dataset == "MUTAG" or args.dataset == "IMDB-BINARY" or args.dataset == "IMDB-MULTI":
+                parameters["features"] = ["degree"]   
+            if args.dataset == "MUTAG":
+                parameters["num_of_layer"] = [1,2,3,4,5,6,7]
     if args.task in process_data.available_tasks() and args.dataset in process_data.available_datasets():
         with tf.device(device):
             list_of_parameters = list(ParameterGrid(parameters))
             num_list_of_parameters = len(list_of_parameters)
             for parameter_id, parameters_ in tqdm(enumerate(list_of_parameters), unit= "param"):
-                if parameter_id in [k for k in range(num_list_of_parameters)]:
+                if parameter_id in [k for k in range(num_list_of_parameters)][8:]:
                     first_run = True
                     for run_id in range(args.num_of_run):
                         parameters_ = process_data.update_path(parameters_, args.dataset+"_"+args.task, NOW, parameter_id, run_id)

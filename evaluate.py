@@ -126,7 +126,7 @@ def evaluate_kernel_cv(embeddings_list,labels,list_of_parameters, list_of_run_pa
                     K_test  = [K[test_index][:, train_index] for K in kernels_sublist]
                     y_train, y_test = labels[train_index], labels[test_index]
                     gs, best_params, val_results = custom_grid_search_cv(SVC(kernel='precomputed'), 
-                            classif_tuned_parameters, K_train, y_train, cv=5)
+                            classif_tuned_parameters, K_train, y_train, cv_num=5)
                     # Store best params
                     best_C.append( best_params['params']['C'] )
                     best_gamma.append( gammas[best_params['K_idx']])
@@ -189,7 +189,7 @@ def evaluate_knn_cv(embeddings_list,labels,list_of_parameters, list_of_run_path,
                     D_test  = [D[test_index][:, train_index] for D in distances_sublist]
                     y_train, y_test = labels[train_index], labels[test_index]
                     gs, best_params, val_results = custom_grid_search_cv(KNeighborsClassifier(metric='precomputed'), 
-                            classif_tuned_parameters, D_train, y_train, cv=5)
+                            classif_tuned_parameters, D_train, y_train, cv_num=5)
                     best_k.append( best_params['params']['n_neighbors'] )
                     best_null.append(best_params['K_idx'])
                     y_pred = gs.predict(D_test[best_params['K_idx']])
@@ -221,13 +221,13 @@ def evaluate_knn_cv(embeddings_list,labels,list_of_parameters, list_of_run_path,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
-    parser.add_argument('--dataset', default='MUTAG', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
+    parser.add_argument('--dataset', default='PROTEINS', help='Task to execute. Only %s are currently available.'%str(available_tasks()))
     parser.add_argument('--date', default='', help='[MONTH]_[DAY]_[YEAR]_[HOUR]h[MINUTES]m[SECONDES]s')
     parser.add_argument('--num_of_run', default=10, help='This parameter is required only for FGW and WWL. It set the number on which the results of the method are averaged.')
     
     args = parser.parse_args()
     if args.task in available_tasks():
-        search_path_tab = ['./results/'+args.dataset+"_"+args.task+'/'+args.date]
+        search_path_tab = ['/scratch/ykaloga/pw_results/results/'+args.dataset+"_"+args.task+'/'+args.date]
         if args.date == '':
             search_path_tab = glob.glob(search_path_tab[0]+'/*')
         for search_path in search_path_tab:

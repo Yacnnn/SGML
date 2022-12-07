@@ -171,3 +171,10 @@ or
     python3 evaluate.py -task sw4d --dataset BZR
 
 WWL and a sliced version SWWL can be also run in the same way, however there is no adaptation since the features are generated for these models by a non trainable GCN (Weisfeiler-Lheman features).
+
+
+### Compute PW and RPW 
+
+In the experiment we never used PW or RPW with non uniform distribution.
+However a function 'compute_pw' which can deal with non uniform distrubution can be found 
+on utils/process.py file.
