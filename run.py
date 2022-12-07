@@ -301,11 +301,7 @@ if __name__ == '__main__':
             parameters["num_of_layer"] = [1,2,3,4]
         else:
             parameters["num_of_layer"] = [1,2,3,4]
-<<<<<<< HEAD
-            # parameters["features"] = ["degree"] #["features","degree","node_labels","graph_fuse"]
-=======
             #parameters["features"] = ["degree"] #["features","degree","node_labels","graph_fuse"]
->>>>>>> cff24dd7ce7f8b9777cbf093176548237c2d610e
             parameters["final_layer_dim"] = [5]
             parameters["decay_learning_rate"] = [False]
             parameters["partial_train"] = [0.9]#[0.9,0.2]
@@ -323,40 +319,23 @@ if __name__ == '__main__':
                 parameters["batch_size"] = [8] 
                 parameters["learning_rate"] = [0.999e-3]
                 parameters["num_of_iter"] = [10, 20] 
-<<<<<<< HEAD
-                parameters["features"] = [args.feature]#["node_labels","fuse"] 
-=======
                 parameters["features"] = [args.feature]
                 #parameters["features"] = ["node_labels","fuse"] 
->>>>>>> cff24dd7ce7f8b9777cbf093176548237c2d610e
             if args.dataset == "PROTEINS" or args.dataset == "PROTEINS_full":
                 parameters["batch_size"] = [8] 
                 parameters["learning_rate"] = [0.999e-4]
                 parameters["num_of_iter"] = [10, 20] 
-<<<<<<< HEAD
-                # parameters["features"] = ["node_labels"]  
-                parameters["features"] = [args.feature]#["node_labels","fuse"]       
-                # parameters["gcn"] = ["gat"] #,'fuse'
-                # parameters["features"] = ["fuse"] #,'fuse'
-=======
                 parameters["features"] = [args.feature]
                 #parameters["features"] = ["fuse"] #,'fuse'
->>>>>>> cff24dd7ce7f8b9777cbf093176548237c2d610e
             if args.dataset == "COX2" or args.dataset == "BZR":
                 parameters["features"] = ["attributes"]        
             if args.dataset == "NCI1":
                 parameters["features"] = ["node_labels"]        
             if args.dataset == "Cuneiform":
                 parameters["features"] = ['fuse']    
-<<<<<<< HEAD
-                parameters["batch_size"] = [64]      
-            if args.dataset == "MUTAG" or args.dataset == "IMDB-BINARY" or args.dataset == "IMDB-MULTI":
-                parameters["features"] = ["degree"]   
-=======
                 parameters["batch_size"] = [64]
             if args.dataset == "MUTAG" or args.dataset == "IMDB-BINARY" or args.dataset == "IMDB-MULTI":
                 parameters["features"] = ["degree"]  
->>>>>>> cff24dd7ce7f8b9777cbf093176548237c2d610e
             if args.dataset == "MUTAG":
                 parameters["num_of_layer"] = [1,2,3,4,5,6,7]
     if args.task in process_data.available_tasks() and args.dataset in process_data.available_datasets():
