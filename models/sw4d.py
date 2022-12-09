@@ -14,6 +14,7 @@ from utils.process import uniform_transport_matrix
 class Sw4d(Xw4d):
     def __init__(self, 
                  gcn_type = "krylov-4",
+                 store_apxf = False,
                  l2reg = 0,
                  loss_name = "NCA",
                  num_of_layer = 2,
@@ -21,6 +22,7 @@ class Sw4d(Xw4d):
                  final_layer_dim = 0,                
                  nonlinearity = "relu",
                  sampling_type = "regular",
+                 gcn_extra_parameters = {},
                  num_of_theta_sampled = 1, 
                  dataset = ""                 
                 ):
@@ -32,17 +34,19 @@ class Sw4d(Xw4d):
                                    hidden_layer_dim = hidden_layer_dim,
                                    final_layer_dim = final_layer_dim,                
                                    nonlinearity = nonlinearity,
+                                   store_apxf = store_apxf,
+                                   gcn_extra_parameters = gcn_extra_parameters,
                                    sampling_type = sampling_type,
                                    num_of_theta_sampled = num_of_theta_sampled , 
                                    dataset = dataset  ) 
 
-    def call(self, feat, adj, lab, s):
+    def call(self, feat, adj, lab, ind):
         lab = tf.convert_to_tensor(lab)[np.newaxis,:]
-        return self.loss( self.square_distance_quad_tf( feat, adj, self.thetalist ,False ) , labels = lab ), 0
+        return self.loss( self.square_distance_quad_tf(feat, adj, ind, self.thetalist ,False ) , labels = lab ), 0
 
 #Compute SW for a unique projection vector theta
-    def square_distance_fromtheta_tf(self, feat, adj, theta, display = False):
-        output = self.gcn([feat,adj])
+    def square_distance_fromtheta_tf(self, feat, adj, ind, theta, display = False):
+        output = self.gcn([feat,adj,ind])
         dmsq = []
         for i in tqdm(range(len(output)),disable= not display):
             for j in range(len(output)):
@@ -68,9 +72,9 @@ class Sw4d(Xw4d):
         return distances_sq
 
 #Numpy - Quadratic implementation of SW; compute the square of the distance
-    def square_distance_quad_np(self, feat, adj, thetalist, display = False):
+    def square_distance_quad_np(self, feat, adj, ind, thetalist, display = False):
         n = thetalist.shape[1]
-        output = self.gcn([feat,adj])
+        output = self.gcn([feat,adj,ind])
         output = [np.array(a) for a in output]
         utils.tic()
         dmsq = []
@@ -93,9 +97,9 @@ class Sw4d(Xw4d):
         return distance_sq/n
 
 #Numpy - Quadratic implementation of SW; compute the square of the distance
-    def square_distance_quad_tf(self, feat, adj, thetalist, display = False):
+    def square_distance_quad_tf(self, feat, adj, ind, thetalist, display = False):
         n = thetalist.shape[1]
-        output = self.gcn([feat,adj])
+        output = self.gcn([feat,adj,ind])
         dmsq = []
         if self.sampling_type == 'basis':
             output_sort = [ tf.sort(o,axis = 0) for o in output ]
@@ -116,14 +120,14 @@ class Sw4d(Xw4d):
         distance_sq = distance_sq + tf.transpose(distance_sq)
         return distance_sq/n 
 
-    def distance_tf(self, feat, adj, display = None):
+    def distance_tf(self, feat, adj, ind = -1, display = None):
         theta = self.thetalist
-        return np.sqrt(self.square_distance_tf(feat, adj, theta))
+        return np.sqrt(self.square_distance_tf(feat, adj, ind, theta))
 
-    def distance_quad_np(self, feat, adj, display = None):
+    def distance_quad_np(self, feat, adj, ind = -1, display = None):
         theta = self.thetalist
-        return np.sqrt(self.square_distance_quad_np(feat, adj, theta))
+        return np.sqrt(self.square_distance_quad_np(feat, adj, ind, theta))
 
-    def distance_quad_tf(self, feat, adj, display = None):
+    def distance_quad_tf(self, feat, adj, ind = -1, display = None):
         theta = self.thetalist
-        return tf.sqrt(self.square_distance_quad_tf(feat, adj, theta))
+        return tf.sqrt(self.square_distance_quad_tf(feat, adj, ind, theta))

@@ -16,7 +16,7 @@ from scipy.spatial.distance import cdist
 from sklearn.base import TransformerMixin
 from collections import defaultdict
 
-ROOTDIR = "/scratch/ykaloga/pw_results/"
+ROOTDIR = ""
 def available_tasks():
     """ Return list of available tasks. """
     return ["sw4d","pw4d","wwl","swwl","fgw"]
@@ -316,8 +316,6 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
     # data["graph_fuse"] = np.array(aggregate)
     return data
 
-
-
 ############## WWL utils function
 # Next function come from https://github.com/BorgwardtLab/WWL
 # Implement features extraction of WWL papers 
@@ -478,7 +476,6 @@ class WeisfeilerLehman(TransformerMixin):
                 else:
                     neighbor_labels.append( X.vs[n_indices]['label'] )
             return neighbor_labels
-
 
 ############## GIN utils function
 class S2VGraph(object):

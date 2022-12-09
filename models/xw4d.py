@@ -6,7 +6,8 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 import matplotlib.pyplot as plt
 from tqdm import tqdm 
-from layers.sgcn import Sgc
+from layers.sgcn import Sgcn
+from layers.sgcn_plus import Sgcn_plus
 from layers.gin import Gin
 from layers.graph_attention_network import Graph_attention_network
 from layers.krylov import Krylov
@@ -17,12 +18,14 @@ from utils.process import dpp_sphere_smpl
 class Xw4d(tf.keras.Model):
     def __init__(self, 
                  gcn_type = "krylov-4",
+                 store_apxf = False,
                  l2reg = 0,
                  loss_name = "NCA",
                  num_of_layer = 3,
                  hidden_layer_dim = 32,
                  final_layer_dim = 32,
                  nonlinearity = "tanh",
+                 gcn_extra_parameters = {},
                  sampling_type = "uniform",
                  num_of_theta_sampled = 1, 
                  dataset = ""
@@ -30,12 +33,14 @@ class Xw4d(tf.keras.Model):
         super(Xw4d, self).__init__() 
         #Parameters
         self.gcn_type = gcn_type
+        self.store_apxf = store_apxf
         self.l2reg = l2reg
         self.loss_name = loss_name
         self.num_of_layer = num_of_layer
         self.hidden_layer_dim = hidden_layer_dim
         self.final_layer_dim = final_layer_dim
         self.nonlinearity = nonlinearity
+        self.gcn_extra_parameters = gcn_extra_parameters
         self.sampling_type = sampling_type
         self.num_of_theta_sampled = num_of_theta_sampled
         self.dataset = dataset
@@ -63,12 +68,22 @@ class Xw4d(tf.keras.Model):
 
     def set_gcn(self, nonlinearity):
         if "sgcn" in self.gcn_type:
-            self.gcn = Sgc( 
+            self.gcn = Sgcn( 
                         output_dim=self.final_layer_dim,
                         num_of_layer = self.num_of_layer,
                         nonlinearity = self.nonlinearity,
                         trainable = True,
-                        l2reg = self.l2reg)
+                        l2reg = self.l2reg,
+                        store_apxf=self.store_apxf)
+        if "sgcn+" in self.gcn_type:
+            self.gcn = Sgcn_plus( 
+                        output_dim=self.final_layer_dim,
+                        num_of_layer = self.num_of_layer,
+                        nonlinearity = self.nonlinearity,
+                        trainable = True,
+                        l2reg = self.l2reg,
+                        store_apxf= self.store_apxf,
+                        gcn_extra_parameters = self.gcn_extra_parameters)
         if "gin" in self.gcn_type:
             self.gcn = Gin(self.num_of_layer - 1 , 3, 16, self.final_layer_dim,0 )
         if "gat" in self.gcn_type:

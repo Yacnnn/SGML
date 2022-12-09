@@ -1,15 +1,12 @@
 import os 
 import argparse
-from tkinter import N
 import ot
 import numpy as np
 import scipy.io as sio
+import ast
 import tensorflow as tf
-import time
 from datetime import datetime
 from tqdm import tqdm
-import networkx as nx 
-from utils import process
 from utils import process_data
 from utils import utils
 from lib_fgw.graph import Graph
@@ -32,6 +29,8 @@ def str2bool(string):
         return False
     else :
         return False
+
+
    
 def create_batch(features, structures, labels, batch_size = 32, shuffle = True, precomputed_batch = False):
     """ Creates a list of batch of data. """
@@ -54,10 +53,10 @@ def create_batch(features, structures, labels, batch_size = 32, shuffle = True, 
     batch_features = [ X[ind[0]:ind[1]] for ind in batch_limit]
     batch_structures = [ W[ind[0]:ind[1]] for ind in batch_limit]
     batch_labels = [ labels[ind[0]:ind[1]] for ind in batch_limit]
-    batch_indice = [  s[ind[0]:ind[1]]  for ind in batch_limit]#.astype(np.float32)
+    batch_index = [  s[ind[0]:ind[1]]  for ind in batch_limit]#.astype(np.float32)
     if batch_features[-1].shape[0] == 0 :
-        return batch_features[:-1], batch_structures[:-1], batch_labels[:-1], batch_indice[:-1]
-    return batch_features, batch_structures, batch_labels, batch_indice
+        return batch_features[:-1], batch_structures[:-1], batch_labels[:-1], batch_index[:-1]
+    return batch_features, batch_structures, batch_labels, batch_index
 
 def save_distance(distance, parameters, title_extension = ""):
     new_parameters = {}
@@ -97,9 +96,11 @@ def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_trai
     num_of_layer = parameters["num_of_layer"]
     hidden_layer_dim = parameters["hidden_layer_dim"]
     final_layer_dim = parameters["final_layer_dim"]
+    nonlinearity = parameters["nonlinearity"]
+    store_apxf = parameters['store_apxf']
+    gcn_extra_parameters = parameters['gcn_extra_parameters']
     sampling_nb = parameters["sampling_nb"]
     sampling_type = parameters["sampling_type"]
-    nonlinearity = parameters["nonlinearity"]
     # Training parameters
     learning_rate = parameters["learning_rate"]
     decay_learning_rate = parameters["decay_learning_rate"]
@@ -118,26 +119,29 @@ def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_trai
                         hidden_layer_dim = hidden_layer_dim,
                         final_layer_dim = final_layer_dim,
                         nonlinearity = nonlinearity,
+                        store_apxf = store_apxf,
+                        gcn_extra_parameters = gcn_extra_parameters,
                         sampling_type = sampling_type, 
                         num_of_theta_sampled = sampling_nb,
                         dataset = dataset
                     )
-    # if dataset != 'DD':
+    # if datas
+    # et != 'DD':
     #     model_xw4d.build_transport_matrix(list(data["features"]))
     # old_loss_d = -1
     for e in tqdm(range(num_of_iter), unit= "iter" ):
         # print( "epochs : " + str(e) + "/" + str(num_of_iter))
-        batch_features, batch_structures, batch_labels, batch_indice = create_batch(features, structures, labels, batch_size = batch_size, shuffle = True)
+        batch_features, batch_structures, batch_labels, batch_index = create_batch(features, structures, labels, batch_size = batch_size, shuffle = True)
         optimizer = tf.keras.optimizers.Adam(lr = learning_rate)
         acc_loss_d = 0
-        for feat, struct, lab, s in zip( tqdm( batch_features, unit = "batch", disable = True ), batch_structures, batch_labels, batch_indice ):
+        for feat, struct, lab, ind in zip( tqdm( batch_features, unit = "batch", disable = True ), batch_structures, batch_labels, batch_index):
             with tf.GradientTape() as tape:
-                loss_d, loss_s =  model_xw4d(list(feat),list(struct),list(lab),list(s))
+                loss_d, loss_s =  model_xw4d(list(feat),list(struct),list(lab),list(ind))
                 # print(loss_d)
             gradients = tape.gradient(loss_d, model_xw4d.trainable_variables)
             gradient_variables = zip( gradients, model_xw4d.trainable_variables)
             optimizer.apply_gradients(gradient_variables)
-            acc_loss_d += loss_d/len(batch_indice)
+            acc_loss_d += loss_d/len(batch_index)
         # if tf.abs( (old_loss_d - loss_d ) / loss_d ) < 1e-6 :
         #     break
         # break
@@ -153,7 +157,7 @@ def compute_dataset_distance(parameters, data, model_name = "sw4d", partial_trai
             parameters_copy = parameters.copy()
             parameters_copy["num_of_iter"] = e + 1
             save_distance(distance = D, parameters = parameters_copy , title_extension= "_iter"+str(e + 1)) 
-    D = model_xw4d.distance_quad_np(list(data["features"]),list(data["structures"]))
+    D = model_xw4d.distance_quad_np(list(data["features"]),list(data["structures"]), list(np.arange(data["features"].shape[0])) )
     save_distance(distance = D, parameters = parameters, title_extension= "_iter"+str(e + 1))
     return D
 
@@ -225,17 +229,18 @@ def compute_fgwasserstein_distance(data, parameters):
         for j in range(i+1,n):
             D[i,j] = Fused_Gromov_Wasserstein_distance(alpha=parameters['alpha'],features_metric='sqeuclidean',method='shortest_path').graph_d(graph_list[i],graph_list[j])
         D = (D + D.T)
+        
     save_distance(D, parameters)
     return D
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', default='pw4d', help='Task to execute. Only %s are currently available.'%str(process_data.available_tasks()))
-    parser.add_argument('--dataset', default='PROTEINS', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
-    parser.add_argument('--feature', default = 'node_labels', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
+    parser.add_argument('--dataset', default='MUTAG', help='Dataset to work with. Only %s are currently available.'%str(process_data.available_datasets()))
+    parser.add_argument('--feature', default = 'degree', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
     parser.add_argument('--loss', default = "NCCML", help='Metric learning loss')
     ###    
-    parser.add_argument('--gcn', type = str, default= "sgcn" , help='Type of GCN. [SGCN].')
+    parser.add_argument('--gcn', type = str, default= "sgcn+" , help='Type of GCN. [SGCN].')
     parser.add_argument('--num_of_layer', type = int, default= 2, help='Number of layer for GCN. [-1, integers > 0]. -1 : exponentiate. 0 : GCN = identity.')
     parser.add_argument('--hidden_layer_dim', type = int, default = 0, help='Size of hidden layer of the GCN if applicable. [integer > 0]. O : output dimension = input dimension.')
     parser.add_argument('--final_layer_dim', type = int, default = 5, help='Size of final layer of the GCN. [-2, -1, 0, integer > 0]. O : output dimension = input dimension. -1 : output dimension = input dimension//2. -2 : output dimension = input dimension//2.')
@@ -248,6 +253,8 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type = int, default = 8, help='Batch size. [integer > 0]')
     parser.add_argument('--partial_train', type = float, default = 0.9, help='Fraction of dataset to train on. [0 < float < 0.9]. If > 0.9 then = 0.9.')
     parser.add_argument('--num_of_run', type = int, default = 10, help='Number of run. [integer > 0]')
+    parser.add_argument('--store_apxf', type = str2bool, default = False, help='Store adjacency power x features for GCN for which it is possible. [true or false]')
+    parser.add_argument('--gcn_extra_parameters', type = ast.literal_eval, default = '{}', help='Dicionary containing supplementary parmameters for complex gcn. Look at the GCN constructor to know the extra parameters. [\'{\'properties\' : value, ...}\']')
     ###
     parser.add_argument('--sampling_type',type = str, default='ortho', help='How to sample points for Monte-Carlo Estimation. For sw4d and pw4d. [uniform, basis, orthov2, dppv2, hamm]')
     parser.add_argument('--sampling_nb', default = 50, help='Number of points to sample. [integer > 0]')
@@ -272,6 +279,8 @@ if __name__ == '__main__':
     if args.task == "sw4d" or args.task == "pw4d":
         parameters["loss"] = [args.loss] 
         parameters["gcn"] = [args.gcn]
+        parameters["gcn_extra_parameters"] = [args.gcn_extra_parameters]
+        parameters["store_apxf"] = [args.store_apxf]
         #
         parameters["num_of_layer"] = [args.num_of_layer]
         parameters["hidden_layer_dim"] = [args.hidden_layer_dim]
@@ -343,7 +352,7 @@ if __name__ == '__main__':
             list_of_parameters = list(ParameterGrid(parameters))
             num_list_of_parameters = len(list_of_parameters)
             for parameter_id, parameters_ in tqdm(enumerate(list_of_parameters), unit= "param"):
-                if parameter_id in [k for k in range(num_list_of_parameters)][8:]:
+                if parameter_id in [k for k in range(num_list_of_parameters)]:
                     first_run = True
                     for run_id in range(args.num_of_run):
                         parameters_ = process_data.update_path(parameters_, args.dataset+"_"+args.task, NOW, parameter_id, run_id)

@@ -2,10 +2,9 @@ import numpy as np
 import tensorflow as tf
 
 from utils.process import memoize_compute_features
-# import functools
-# from functools import lru_cache
+# same as SGCN with a MLP instead of only a linear map 
 
-class Sgcn(tf.keras.Model):
+class Sgcn_plus(tf.keras.Model):
         
     def __init__(self,
                 num_of_layer = 2,
@@ -13,9 +12,10 @@ class Sgcn(tf.keras.Model):
                 output_dim = 10,
                 trainable = True,
                 l2reg = 0,
-                store_apxf = False
+                store_apxf = False,
+                gcn_extra_parameters = {}
                  ):
-        super(Sgcn,self).__init__()
+        super(Sgcn_plus,self).__init__()
         #Parameters
         self.num_of_layer = num_of_layer
         self.nonlinearity = nonlinearity
@@ -23,9 +23,16 @@ class Sgcn(tf.keras.Model):
         self.trainable = trainable
         self.l2reg = l2reg
         self.store_apxf = store_apxf
+        self.gcn_e_p =  { #Defaut dictionnary
+            'hlayer' : 2*[output_dim],
+            'hnonlinearity' : self.str2nonlinearity('relu'),
+            'fnonlinearity' : self.str2nonlinearity('relu')
+        } | gcn_extra_parameters
         #Layer
-        self.dense_layer = tf.keras.layers.Dense(self.output_dim, activation = self.nonlinearity_func() , trainable = True, use_bias = False)
-    
+        self.dense_layers = [tf.keras.layers.Dense(h, activation = self.str2nonlinearity(self.gcn_e_p['hnonlinearity']) , trainable = True, use_bias = True)
+        for h in self.gcn_e_p['hlayer']] + [tf.keras.layers.Dense(self.output_dim, activation = self.str2nonlinearity(self.gcn_e_p['fnonlinearity']) , trainable = True, use_bias = True)]
+        self.apply_dense_layers = lambda h, inputlayer : self.apply_dense_layers(h+1,self.dense_layers[h](inputlayer)) if h < len(self.dense_layers) else inputlayer; 
+        print('')
     # @lru_cache(maxsize=None)
     @memoize_compute_features
     def compute_feats(self, input_feat, input_adj, input_ind, num_of_layer, store_apxf = False):
@@ -39,8 +46,8 @@ class Sgcn(tf.keras.Model):
                 return inputs[0]
         outputs_ = []
         for input_ in zip(inputs[0],inputs[1],inputs[2]):
-            outputs_.append(self.compute_feats(input_feat = input_[0], input_adj = input_[1], input_ind = input_[2], num_of_layer = self.num_of_layer,store_apxf = self.store_apxf))
-        outputs = [self.dense_layer(out) for out in outputs_]
+            outputs_.append(self.compute_feats(input_[0], input_[1], input_[2], self.num_of_layer , self.store_apxf))
+        outputs = [self.apply_dense_layers(0, out) for out in outputs_]
         return outputs
     
     def oldcall(self,inputs): # inputs = [feat, adj, ind]
@@ -59,7 +66,7 @@ class Sgcn(tf.keras.Model):
                 for layer in range(1,self.num_of_layer):
                     output = output @ input_adj
                 outputs_.append(output @ input_feat)
-        outputs = [self.dense_layer(out) for out in outputs_]
+        outputs = [self.apply_dense_layers(out) for out in outputs_]
         return outputs
 
     def nonlinearity_func(self):
@@ -69,3 +76,10 @@ class Sgcn(tf.keras.Model):
             return tf.nn.tanh
         if self.nonlinearity == None:
             return None
+
+    def str2nonlinearity(self, name):
+        if name == 'relu':
+            return tf.nn.relu
+        if name == 'tanh':
+            return tf.nn.tanh
+        return None

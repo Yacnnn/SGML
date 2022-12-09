@@ -227,7 +227,7 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     if args.task in available_tasks():
-        search_path_tab = ['/scratch/ykaloga/pw_results/results/'+args.dataset+"_"+args.task+'/'+args.date]
+        search_path_tab = ['results/'+args.dataset+"_"+args.task+'/'+args.date]
         if args.date == '':
             search_path_tab = glob.glob(search_path_tab[0]+'/*')
         for search_path in search_path_tab:

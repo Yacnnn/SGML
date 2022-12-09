@@ -1,8 +1,10 @@
 # import n_sphere
+import functools
 import numpy as np
 from dppy.multivariate_jacobi_ope import MultivariateJacobiOPE
 import ot
 
+# compute distance func
 def uniform_transport_matrix(p_nbins, q_nbins):
     """ Return the transport matrix between two (sorted) real uniform distribution with p and q bins.
     """
@@ -125,6 +127,21 @@ def uniform_transport_matrixv2(p_nbins, q_nbins, order_p, order_q):
         tampon2[:,p] = np.sum(tampon[:,(mn)*p:(mn)*p+mn],1)
     return tampon2
 
+# cache func
+def memoize_compute_features(func):
+    cache = func.cache = {}
+    @functools.wraps(func)
+    def memoized_func(*l_args):
+        if l_args[-1] == False:
+            return func(*l_args)
+        key = l_args[-3]
+        if key not in cache :
+            cache[key] = func(*l_args)
+        return cache[key]
+        #print("not frist"+str(key))
+    return memoized_func
+    
+# dpp sampling func
 def list_of_primes(n):
     """ Return the first n prime number.
     """
