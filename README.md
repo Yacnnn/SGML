@@ -38,6 +38,9 @@ ALL code related to Fused Gromov-Waserstein comes from https://github.com/tvayer
     maintaining good performances as illustrated by the experimental study presented
     in this paper. 
 
+### Poster
+- 'poster/poster_sgmlv2.png' -- poster (landscape format)
+
 ## USAGE
 
 ### Dataset
