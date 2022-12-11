@@ -39,7 +39,7 @@ ALL code related to Fused Gromov-Waserstein comes from https://github.com/tvayer
     in this paper. 
 
 ### Poster
-- 'poster/poster_sgmlv2.png' -- poster (landscape format)
+<p align="center"><img src="poster/poster_sgmlv2.png" width="500" /></p>
 
 ## USAGE
 
