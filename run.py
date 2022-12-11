@@ -240,7 +240,7 @@ if __name__ == '__main__':
     parser.add_argument('--feature', default = 'degree', help='Features to use for nodes. Only %s are currently available.'%str(process_data.available_tasks()))
     parser.add_argument('--loss', default = "NCCML", help='Metric learning loss')
     ###    
-    parser.add_argument('--gcn', type = str, default= "sgcn+" , help='Type of GCN. [SGCN].')
+    parser.add_argument('--gcn', type = str, default= "sgcn" , help='Type of GCN. [sgcn, sgcn+].')
     parser.add_argument('--num_of_layer', type = int, default= 2, help='Number of layer for GCN. [-1, integers > 0]. -1 : exponentiate. 0 : GCN = identity.')
     parser.add_argument('--hidden_layer_dim', type = int, default = 0, help='Size of hidden layer of the GCN if applicable. [integer > 0]. O : output dimension = input dimension.')
     parser.add_argument('--final_layer_dim', type = int, default = 5, help='Size of final layer of the GCN. [-2, -1, 0, integer > 0]. O : output dimension = input dimension. -1 : output dimension = input dimension//2. -2 : output dimension = input dimension//2.')
