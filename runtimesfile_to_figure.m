@@ -32,4 +32,3 @@ xlabel('Number of samples','interpreter','latex','fontSize',30) %,26
 ylabel('Computing times (s)','interpreter','latex','fontSize',30) %;26
 grid on
 
-
