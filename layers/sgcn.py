@@ -39,7 +39,7 @@ class Sgcn(tf.keras.Model):
                 return inputs[0]
         outputs_ = []
         for input_ in zip(inputs[0],inputs[1],inputs[2]):
-            outputs_.append(self.compute_feats(input_feat = input_[0], input_adj = input_[1], input_ind = input_[2], num_of_layer = self.num_of_layer,store_apxf = self.store_apxf))
+            outputs_.append(self.compute_feats(input_[0], input_[1], input_[2], self.num_of_layer, self.store_apxf))
         outputs = [self.dense_layer(out) for out in outputs_]
         return outputs
     
