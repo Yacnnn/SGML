@@ -9,6 +9,7 @@ import scipy.io as sio
 import matplotlib.pyplot as plt
 import networkx as nx
 
+from pathlib import Path
 from tqdm import tqdm
 from typing import List
 from scipy import sparse
@@ -16,6 +17,7 @@ from scipy.spatial.distance import cdist
 from sklearn.base import TransformerMixin
 from collections import defaultdict
 
+strpath = lambda x: str(Path(x).resolve())
 ROOTDIR = ""
 def available_tasks():
     """ Return list of available tasks. """
@@ -96,12 +98,12 @@ def normalize_features(X):
 
 def create_save_rootfolder(task, NOW):
     """ Create root folder results/task for save informations about MVGCCA training. """
-    if not os.path.isdir(ROOTDIR+'results'):
-        os.system('mkdir '+ROOTDIR+'results')
-    if not os.path.isdir(ROOTDIR+'results/'+task):
-        os.system('mkdir '+ROOTDIR+'results/'+task)
-    if not os.path.isdir(ROOTDIR+'results/'+task+'/'+NOW):
-        os.system('mkdir '+ROOTDIR+'results/'+task+'/'+NOW) 
+    if not os.path.isdir(strpath(ROOTDIR+'results')):
+        os.system('mkdir '+strpath(ROOTDIR+'results'))
+    if not os.path.isdir(strpath(ROOTDIR+'results/'+task)):
+        os.system('mkdir '+strpath(ROOTDIR+'results/'+task))
+    if not os.path.isdir(strpath(ROOTDIR+'results/'+task+'/'+NOW)):
+        os.system('mkdir '+strpath(ROOTDIR+'results/'+task+'/'+NOW)) 
    
 def update_path(parameters, task, NOW, parameters_id, run_id):
     """ Change the path where we save informations about current run. """
@@ -109,17 +111,17 @@ def update_path(parameters, task, NOW, parameters_id, run_id):
     any_write = parameters["write_weights"] or parameters["write_loss"] or parameters["write_latent_space"] or parameters["evaluation"]
     if any_write:
         create_save_rootfolder(task_, NOW)
-        if  not os.path.isdir(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)):
-            os.system('mkdir '+ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id))
-        if  not os.path.isdir(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id)):
-            os.system('mkdir '+ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id))
+        if  not os.path.isdir(strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id))):
+            os.system('mkdir '+strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)))
+        if  not os.path.isdir(strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id))):
+            os.system('mkdir '+strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id)))
         sio.savemat(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/parameters_dict.mat',parameters)
     parameters["parameters_main_path"] = ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)
     parameters["weights_path"] = ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id)+'/weights/' if parameters["write_weights"] else ''
     parameters["write_loss_path"] = ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id)+'/logs/' if parameters["write_loss"] else ''
     parameters["latent_space_path"] = ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id)+'/embeddings/' if parameters["write_latent_space"] else ''
     parameters["evaluation_path"] = ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id)+'/evaluation/' if parameters["evaluation"] else ''
-    os.system('mkdir '+ parameters["weights_path"] +' '+parameters["write_loss_path"]+' '+parameters["latent_space_path"]+' '+parameters["evaluation_path"] )
+    os.system(strpath('mkdir '+ parameters["weights_path"] +' '+parameters["write_loss_path"]+' '+parameters["latent_space_path"]+' '+parameters["evaluation_path"]))
     return parameters
 
 def rmbkshn(strings):
