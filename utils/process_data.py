@@ -290,7 +290,7 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
             Tamp = [np.sum(adj,0).astype(np.int) for adj in graph_adjency_matrix]
             max_tamp = max([np.max(t) for t in Tamp])
             graph_node_labels = [ np.eye(max_tamp)[f-1] for f in Tamp]
-        data["node_labels"] = np.array(graph_node_labels)
+        data["node_labels"] = np.array(graph_node_labels, dtype = object)
         # print("t")
     if dataset_name == "ENZYMES" or dataset_name == "PROTEINS_full" or dataset_name == "PROTEINS" or dataset_name == "COX2" or dataset_name == "BZR" or  dataset_name == "Cuneiform":
         aggregate = [ np.concatenate([ga,gf],axis=1) for ga, gf in zip(graph_attributes,graph_node_labels)]
