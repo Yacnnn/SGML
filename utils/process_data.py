@@ -69,7 +69,7 @@ def load_dataset(dataset, feature = "attributes", h = 0):
         feature_key =  "node_positions" if feature == "attributes" else "graph_degree"
     datam = {}
     datam["features"] = data[feature_key]
-    datam["structures"] = np.array([d+0.0 for d in data["adjency_matrix"]]) 
+    datam["structures"] = np.array([d+0.0 for d in data["adjency_matrix"]], dtype = object) 
     datam["labels"] = data["graph_labels"]
     if h > 0 :
         if feature == "features" or feature == 'graph_fuse':  
@@ -243,7 +243,7 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
                 for j in range(graph_size[i]):
                     node_labels[i][j] = node_labels_tampon[k]
                     k = k + 1
-        index_max = int(np.max(np.concatenate(np.array(node_labels),axis=0)))
+        index_max = int(np.max(np.concatenate(np.array(node_labels, dtype = object),axis=0)))
         graph_node_labels = [ np.eye(index_max+1)[node_labels[i].astype(int)] for i in range(len(graph_adjency_matrix))]
 
     exist_node_attributes = False
@@ -297,7 +297,7 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
         data["graph_fuse"] = np.array(aggregate)
                 
     graph_adj = [(graph_adjency_matrix[i]>0).astype(int) for i in range(len(graph_adjency_matrix))]
-    data["adjency_matrix"] = np.array(graph_adj) 
+    data["adjency_matrix"] = np.array(graph_adj, dtype = object) 
     index_to_delete = np.where(np.array(data["graph_size"]) < 2)
     data["adjency_matrix"] = np.delete(data["adjency_matrix"], index_to_delete, axis = 0 )
     data["graph_size"] = np.delete(data["graph_size"], index_to_delete, axis = 0)
@@ -312,7 +312,7 @@ def load_drtmnd_dataset(dataset_name, use_attributes_if_exist = True):
 
     max_degree = np.max([ np.max(np.sum(data["adjency_matrix"][i], axis = 0)) for i in range(len(data["adjency_matrix"])) ])
     # data["features"] = np.array(datam["features"])
-    data["graph_degree"] = np.array([np.eye(int(max_degree))[np.sum(data["adjency_matrix"][i].astype(np.int32), axis = 0) - 1] for i in range(len(data["adjency_matrix"])) ])
+    data["graph_degree"] = np.array([np.eye(int(max_degree))[np.sum(data["adjency_matrix"][i].astype(np.int32), axis = 0) - 1] for i in range(len(data["adjency_matrix"])) ], dtype = object)
     
     # aggregate = [ np.concatenate([ga,gf],axis=1) for ga, gf in zip(data["graph_degree"],graph_node_labels)]
     # data["graph_fuse"] = np.array(aggregate)
