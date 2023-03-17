@@ -111,10 +111,12 @@ def update_path(parameters, task, NOW, parameters_id, run_id):
     any_write = parameters["write_weights"] or parameters["write_loss"] or parameters["write_latent_space"] or parameters["evaluation"]
     if any_write:
         create_save_rootfolder(task_, NOW)
-        if  not os.path.isdir(strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id))):
-            os.system('mkdir '+strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)))
-        if  not os.path.isdir(strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id))):
-            os.system('mkdir '+strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id)))
+        os.makedirs(strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)), exist_ok=True)
+        os.makedirs(strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id)), exist_ok=True)
+        # if  not os.path.isdir(strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id))):
+        #     os.system('mkdir '+strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)))
+        # if  not os.path.isdir(strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id))):
+        #     os.system('mkdir '+strpath(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id)))
         sio.savemat(ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/parameters_dict.mat',parameters)
     parameters["parameters_main_path"] = ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)
     parameters["weights_path"] = ROOTDIR+'results/'+task_+'/'+NOW+'/parameters'+str(parameters_id)+'/run'+str(run_id)+'/weights/' if parameters["write_weights"] else ''
