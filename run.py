@@ -29,8 +29,6 @@ def str2bool(string):
         return False
     else :
         return False
-
-
    
 def create_batch(features, structures, labels, batch_size = 32, shuffle = True, precomputed_batch = False):
     """ Creates a list of batch of data. """
@@ -205,6 +203,7 @@ def compute_wasserstein_distance(label_sequences, parameters, h, sinkhorn=False,
     save_distance(wasserstein_distances[-1], parameters)
     return wasserstein_distances
 
+# from https://github.com/tvayer/SGW
 def compute_fgwasserstein_distance(data, parameters):
     '''
     Generate the Wasserstein distance matrix for the graphs embedded 
@@ -229,7 +228,6 @@ def compute_fgwasserstein_distance(data, parameters):
         for j in range(i+1,n):
             D[i,j] = Fused_Gromov_Wasserstein_distance(alpha=parameters['alpha'],features_metric='sqeuclidean',method='shortest_path').graph_d(graph_list[i],graph_list[j])
         D = (D + D.T)
-        
     save_distance(D, parameters)
     return D
 
